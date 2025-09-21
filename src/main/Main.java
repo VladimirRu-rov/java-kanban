@@ -5,45 +5,45 @@ import task.Epic;
 import task.Subtask;
 import task.Task;
 import task.Status;
+import manage.InMemoryTaskManager;
+import manage.Managers;
 
 public class Main {
+    private static final TaskManager taskManager = Managers.getDefault();
 
     public static void main(String[] args) {
+        addTasks();
+        printAllTasks();
+        printViewHistory();
+    }
 
-        TaskManager taskManager = new TaskManager();
-
+    private static void addTasks() {
         Task digestPorogy = new Task("Пороги", "Переварить оба порога у хорошего мастера");
-        Task createdTask1 = taskManager.addTask(digestPorogy);
-        System.out.println(createdTask1);
+        taskManager.addTask(digestPorogy);
 
         Task wherePerry = new Task("Где Перри?", "Найти Перри утконоса");
-        Task createdTask2 = taskManager.addTask(wherePerry);
-        System.out.println(createdTask2);
+        taskManager.addTask(wherePerry);
 
-        Task Sandy = new Task("Сэнди", "Не дать Сэнди испортить лето Финесу и Фербу");
-        Task createdTask3 = taskManager.addTask(Sandy);
-        System.out.println(createdTask3);
+        Task sandy = new Task("Сэнди", "Не дать Сэнди испортить лето Финесу и Фербу");
+        taskManager.addTask(sandy);
 
         // Проверяем изменение статуса задачи
-        Task updatedDigestPorogy = new Task(createdTask1.getId(), "Левый порог", "Переварить левый порог", Status.IN_PROGRESS);
-        Task updatedResult1 = taskManager.updateTask(updatedDigestPorogy);
-        System.out.println(updatedResult1);
+        Task updatedDigestPorogy = new Task(digestPorogy.getId(), "Левый порог", "Переварить левый порог", Status.IN_PROGRESS);
+        taskManager.updateTask(updatedDigestPorogy);
 
-        // Создаём эпики
+        // Эпики
         Epic epicPaintCar = new Epic("Покраска машины", "Покрасить разные элементы машины");
-        Epic addedEpic1 = taskManager.addEpic(epicPaintCar);
-        System.out.println(addedEpic1);
+        taskManager.addEpic(epicPaintCar);
 
         Epic epicFunny = new Epic("Отправиться в отпуск", "По возможности захватить Польшу :D");
-        Epic addedEpic2 = taskManager.addEpic(epicFunny);
-        System.out.println(addedEpic2);
+        taskManager.addEpic(epicFunny);
 
         // Добавляем подзадачи в первый эпик
-        Subtask subtask1_1 = new Subtask("Крыло", "Покрасить крыло", addedEpic1.getId());
-        Subtask subtask1_2 = new Subtask("Левый порог", "Покрасить левый порог", addedEpic1.getId());
-        Subtask subtask1_3 = new Subtask("Правый порог", "Покрасить правый порог", addedEpic1.getId());
-        Subtask subtask1_4 = new Subtask("Крыша", "Купить новую крышу с люком", addedEpic1.getId());
-        Subtask subtask1_5 = new Subtask("Бампер", "Покрасить бампер", addedEpic1.getId());
+        Subtask subtask1_1 = new Subtask("Крыло", "Покрасить крыло", epicPaintCar.getId());
+        Subtask subtask1_2 = new Subtask("Левый порог", "Покрасить левый порог", epicPaintCar.getId());
+        Subtask subtask1_3 = new Subtask("Правый порог", "Покрасить правый порог", epicPaintCar.getId());
+        Subtask subtask1_4 = new Subtask("Крыша", "Купить новую крышу с люком", epicPaintCar.getId());
+        Subtask subtask1_5 = new Subtask("Бампер", "Покрасить бампер", epicPaintCar.getId());
 
         taskManager.addSubTask(subtask1_1);
         taskManager.addSubTask(subtask1_2);
@@ -52,27 +52,27 @@ public class Main {
         taskManager.addSubTask(subtask1_5);
 
         // Просматриваем состояние первого эпика после добавления подзадач
-        System.out.println(addedEpic1);
+        System.out.println(epicPaintCar);
 
         // Изменяем статус первой подзадачи на "Выполнено"
         subtask1_1.setStatus(Status.DONE);
         taskManager.updateSubtask(subtask1_1);
-        System.out.println(addedEpic1);
+        System.out.println(epicPaintCar);
 
         // Завершаем вторую подзадачу
         subtask1_2.setStatus(Status.DONE);
         taskManager.updateSubtask(subtask1_2);
-        System.out.println(addedEpic1);
+        System.out.println(epicPaintCar);
 
         // Завершена третья подзадача
         subtask1_3.setStatus(Status.DONE);
         taskManager.updateSubtask(subtask1_3);
-        System.out.println(addedEpic1);
+        System.out.println(epicPaintCar);
 
         // Выполняем четвертую подзадачу
         subtask1_4.setStatus(Status.DONE);
         taskManager.updateSubtask(subtask1_4);
-        System.out.println(addedEpic1);
+        System.out.println(epicPaintCar);
 
         // Пятая подзадача ещё не сделана
         System.out.println("Последняя подзадача: " + subtask1_5);
@@ -80,36 +80,64 @@ public class Main {
         // А теперь выполняем пятую подзадачу
         subtask1_5.setStatus(Status.DONE);
         taskManager.updateSubtask(subtask1_5);
-        System.out.println(addedEpic1); // Все подзадачи выполнены, значит весь эпик тоже считается завершённым
+        System.out.println(epicPaintCar); // Теперь эпик выполнен целиком
 
         // Рассмотрим второй эпик
-        Subtask subtask2_1 = new Subtask("Найти жинку", "Найти жинку и устроить свадьбу", addedEpic2.getId());
-        Subtask subtask2_2 = new Subtask("Свадьба", "Захватить Польшу", addedEpic2.getId());
+        Subtask subtask2_1 = new Subtask("Найти жинку", "Найти жинку и устроить свадьбу", epicFunny.getId());
+        Subtask subtask2_2 = new Subtask("Свадьба", "Захватить Польшу", epicFunny.getId());
         taskManager.addSubTask(subtask2_1);
         taskManager.addSubTask(subtask2_2);
 
         // Вторая подзадача выполнена сразу
         subtask2_2.setStatus(Status.DONE);
         taskManager.updateSubtask(subtask2_2);
-        System.out.println(addedEpic2);
+        System.out.println(epicFunny);
+    }
 
-        // Попробуем удалить одну из задач
-        taskManager.deleteTaskByID(createdTask1.getId());
-        System.out.println("\nУдалены задачи:");
-        System.out.println(taskManager.getTasks());
+    private static void printAllTasks() {
+        System.out.println("Задачи:");
+        for (Task task : taskManager.getTasks()) {
+            System.out.println(task);
+            System.out.println();
+        }
 
-        // Удалим один из эпиков
-        taskManager.deleteEpicByID(addedEpic2.getId());
-        System.out.println("\nОстался единственный эпик:");
-        System.out.println(taskManager.getEpics());
+        System.out.println("Эпики:");
+        for (Epic epic : taskManager.getEpics()) {
+            System.out.println(epic);
+            System.out.println();
 
-        System.out.println("\nСписок оставшихся задач:");
-        System.out.println(taskManager.getTasks());
+            for (Task task : taskManager.getEpicSubtasks(epic)) {
+                System.out.println("--> " + task);
+            }
+        }
 
-        System.out.println("\nСписок оставшихся эпиков:");
-        System.out.println(taskManager.getEpics());
+        System.out.println("Подзадачи:");
+        for (Task subtask : taskManager.getSubtasks()) {
+            System.out.println(subtask);
+            System.out.println();
+        }
+    }
 
-        System.out.println("\nСписок подзадач последнего эпика:");
-        System.out.println(taskManager.getEpicSubtasks(addedEpic1));
+    private static void printViewHistory() {
+        // Просматриваем 11 задач, в истории должны отобразиться последние 10
+        taskManager.getTaskByID(2);
+        taskManager.getTaskByID(1);
+        taskManager.getTaskByID(3);
+        taskManager.getEpicByID(5);
+        taskManager.getEpicByID(4);
+        taskManager.getTaskByID(1);
+        taskManager.getSubtaskByID(7);
+        taskManager.getSubtaskByID(6);
+        taskManager.getSubtaskByID(9);
+        taskManager.getSubtaskByID(10);
+        taskManager.getTaskByID(1);
+
+        System.out.println();
+        System.out.println("История просмотров:");
+        for (Task task : taskManager.getHistory()) {
+            System.out.println(task);
+        }
     }
 }
+
+
