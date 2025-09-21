@@ -60,23 +60,12 @@ public class Task {
         if (this == object) return true;
         if (object == null || getClass() != object.getClass()) return false;
         Task task = (Task) object;
-        return id == task.id &&
-                Objects.equals(name, task.name) &&
-                Objects.equals(description, task.description) &&
-                status == task.status;
+        return id == task.id;
     }
 
-    // Формула для генерации хэш-кода задачи
+    @Override// Формула для генерации хэш-кода задачи
     public int hashCode() {
-        int hash = 17;
-        if (name != null) {
-            hash += name.hashCode();
-        }
-        hash *= 31;
-        if (description != null) {
-            hash += description.hashCode();
-        }
-        return hash;
+        return Objects.hashCode(id);
     }
 
 
