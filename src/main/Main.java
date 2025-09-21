@@ -38,6 +38,7 @@ public class Main {
         taskManager.addEpic(epicFunny);
 
         // Добавляем подзадачи в первый эпик
+
         Subtask subTask11 = new Subtask("Крыло", "Покрасить крыло", epicPaintCar.getId());
         Subtask subTask12 = new Subtask("Левый порог", "Покрасить левый порог", epicPaintCar.getId());
         Subtask subTask13 = new Subtask("Правый порог", "Покрасить правый порог", epicPaintCar.getId());
@@ -54,6 +55,7 @@ public class Main {
         System.out.println(epicPaintCar);
 
         // Изменяем статус первой подзадачи на "Выполнено"
+
         subTask11.setStatus(Status.DONE);
         taskManager.updateSubtask(subTask11);
         System.out.println(epicPaintCar);
@@ -77,6 +79,7 @@ public class Main {
         System.out.println("Последняя подзадача: " + subTask15);
 
         // А теперь выполняем пятую подзадачу
+
         subTask15.setStatus(Status.DONE);
         taskManager.updateSubtask(subTask15);
         System.out.println(epicPaintCar); // Теперь эпик выполнен целиком
