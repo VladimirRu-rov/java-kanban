@@ -39,58 +39,58 @@ public class Main {
         taskManager.addEpic(epicFunny);
 
         // Добавляем подзадачи в первый эпик
-        Subtask subTask1_1 = new Subtask("Крыло", "Покрасить крыло", epicPaintCar.getId());
-        Subtask subTask1_2 = new Subtask("Левый порог", "Покрасить левый порог", epicPaintCar.getId());
-        Subtask subTask1_3 = new Subtask("Правый порог", "Покрасить правый порог", epicPaintCar.getId());
-        Subtask subTask1_4 = new Subtask("Крыша", "Купить новую крышу с люком", epicPaintCar.getId());
-        Subtask subTask1_5 = new Subtask("Бампер", "Покрасить бампер", epicPaintCar.getId());
+        Subtask subTask11 = new Subtask("Крыло", "Покрасить крыло", epicPaintCar.getId());
+        Subtask subTask12 = new Subtask("Левый порог", "Покрасить левый порог", epicPaintCar.getId());
+        Subtask subTask13 = new Subtask("Правый порог", "Покрасить правый порог", epicPaintCar.getId());
+        Subtask subTask14 = new Subtask("Крыша", "Купить новую крышу с люком", epicPaintCar.getId());
+        Subtask subTask15 = new Subtask("Бампер", "Покрасить бампер", epicPaintCar.getId());
 
-        taskManager.addSubTask(subTask1_1);
-        taskManager.addSubTask(subTask1_2);
-        taskManager.addSubTask(subTask1_3);
-        taskManager.addSubTask(subTask1_4);
-        taskManager.addSubTask(subTask1_5);
+        taskManager.addSubTask(subTask11);
+        taskManager.addSubTask(subTask12);
+        taskManager.addSubTask(subTask13);
+        taskManager.addSubTask(subTask14);
+        taskManager.addSubTask(subTask15);
 
         // Просматриваем состояние первого эпика после добавления подзадач
         System.out.println(epicPaintCar);
 
         // Изменяем статус первой подзадачи на "Выполнено"
-        subTask1_1.setStatus(Status.DONE);
-        taskManager.updateSubtask(subTask1_1);
+        subTask11.setStatus(Status.DONE);
+        taskManager.updateSubtask(subTask11);
         System.out.println(epicPaintCar);
 
         // Завершаем вторую подзадачу
-        subTask1_2.setStatus(Status.DONE);
-        taskManager.updateSubtask(subTask1_2);
+        subTask12.setStatus(Status.DONE);
+        taskManager.updateSubtask(subTask12);
         System.out.println(epicPaintCar);
 
         // Завершена третья подзадача
-        subTask1_3.setStatus(Status.DONE);
-        taskManager.updateSubtask(subTask1_3);
+        subTask13.setStatus(Status.DONE);
+        taskManager.updateSubtask(subTask13);
         System.out.println(epicPaintCar);
 
         // Выполняем четвертую подзадачу
-        subTask1_4.setStatus(Status.DONE);
-        taskManager.updateSubtask(subTask1_4);
+        subTask14.setStatus(Status.DONE);
+        taskManager.updateSubtask(subTask14);
         System.out.println(epicPaintCar);
 
         // Пятая подзадача ещё не сделана
-        System.out.println("Последняя подзадача: " + subTask1_5);
+        System.out.println("Последняя подзадача: " + subTask15);
 
         // А теперь выполняем пятую подзадачу
-        subTask1_5.setStatus(Status.DONE);
-        taskManager.updateSubtask(subTask1_5);
+        subTask15.setStatus(Status.DONE);
+        taskManager.updateSubtask(subTask15);
         System.out.println(epicPaintCar); // Теперь эпик выполнен целиком
 
         // Рассмотрим второй эпик
-        Subtask subTask2_1 = new Subtask("Найти жинку", "Найти жинку и устроить свадьбу", epicFunny.getId());
-        Subtask subTask2_2 = new Subtask("Свадьба", "Захватить Польшу", epicFunny.getId());
-        taskManager.addSubTask(subTask2_1);
-        taskManager.addSubTask(subTask2_2);
+        Subtask subTask21 = new Subtask("Найти жинку", "Найти жинку и устроить свадьбу", epicFunny.getId());
+        Subtask subTask22 = new Subtask("Свадьба", "Захватить Польшу", epicFunny.getId());
+        taskManager.addSubTask(subTask21);
+        taskManager.addSubTask(subTask22);
 
         // Вторая подзадача выполнена сразу
-        subTask2_2.setStatus(Status.DONE);
-        taskManager.updateSubtask(subTask2_2);
+        subTask22.setStatus(Status.DONE);
+        taskManager.updateSubtask(subTask22);
         System.out.println(epicFunny);
     }
 
