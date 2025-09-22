@@ -128,3 +128,4 @@ public class AllTest {
         HistoryManager defaultHistory = Managers.getDefaultHistory();
         assertTrue(defaultHistory instanceof InMemoryHistoryManager);
     }
+}
