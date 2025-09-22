@@ -49,7 +49,7 @@ public class Main {
         taskManager.addSubTask(subTask13);
         taskManager.addSubTask(subTask14);
         taskManager.addSubTask(subTask15);
-
+      
         // Просматриваем состояние первого эпика после добавления подзадач
         System.out.println(epicPaintCar);
 
