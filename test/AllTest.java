@@ -18,114 +18,96 @@ public class AllTest {
 
     @BeforeEach
     void setup() {
-        taskManager = Managers.getDefault(); // Получаем экземпляр менеджера задач
+        taskManager = Managers.getDefault(); // получаем экземпляр менеджера задач
     }
 
-    // Тестируем сохранение старых версий задач после обновления
+    // Тестируем сохранение старой версии задачи после обновления
     @Test
     void shouldStoreOldVersionAfterUpdate() {
-        // Создаем задачу
         Task initialTask = new Task("Первоначальная задача", "Описание");
         taskManager.addTask(initialTask);
-        taskManager.getTaskByID(initialTask.getId()); // Посмотреть задачу
+        taskManager.getTaskByID(initialTask.getId()); // видим задачу
 
-        // Обновляем задачу
         Task updatedTask = new Task(initialTask.getId(), "Новое название", "Новое описание", Status.IN_PROGRESS);
         taskManager.updateTask(updatedTask);
 
-        // Проверяем, что в истории остаётся старая версия
         List<Task> history = taskManager.getHistory();
-        assertTrue(history.stream().anyMatch(t -> t.getName().equals("Первоначальная задача")));
+        assertTrue(history.stream().anyMatch(t -> t.getName().equals("Первоначальная задача"))); // проверяем старую версию
     }
 
     // Тестируем удаление задачи и её исчезновение из истории
     @Test
     void removedTaskShouldDisappearFromHistory() {
-        // Создаем задачу
         Task task = new Task("Моя задача", "Пример");
         taskManager.addTask(task);
-        taskManager.getTaskByID(task.getId()); // Посмотреть задачу
+        taskManager.getTaskByID(task.getId()); // просматриваем задачу
 
-        // Удаляем задачу
-        taskManager.deleteTaskByID(task.getId());
+        taskManager.deleteTaskByID(task.getId()); // удаляем задачу
 
-        // Проверяем, что задача исчезла из истории
         List<Task> history = taskManager.getHistory();
-        assertFalse(history.contains(task)); // Задача должна отсутствовать в истории
+        assertFalse(history.contains(task)); // проверяем отсутствие задачи в истории
     }
 
     // Проверяем очистку связей подзадач после удаления
     @Test
     void deletedSubtaskShouldNotHaveOldIds() {
-        // Создаем эпик
         Epic epic = new Epic("Отдых", "Планирую отдых");
         taskManager.addEpic(epic);
 
-        // Создаем подзадачу
         Subtask subtask = new Subtask("Купание", "Идем купаться", epic.getId());
         taskManager.addSubTask(subtask);
 
-        // Удаляем подзадачу
-        taskManager.deleteSubtaskByID(subtask.getId());
+        taskManager.deleteSubtaskByID(subtask.getId()); // удаляем подзадачу
 
-        // Проверяем, что подзадача была удалена
-        assertNull(taskManager.getSubtaskByID(subtask.getId()));
+        assertNull(taskManager.getSubtaskByID(subtask.getId())); // проверяем, что подзадачи нет
     }
 
     // Проверяем очистку ссылок на подзадачи после удаления эпика
     @Test
     void deletedEpicShouldClearSubtasks() {
-        // Создаем эпик
         Epic epic = new Epic("Отдых", "Планирую отдых");
         taskManager.addEpic(epic);
 
-        // Создаем подзадачу
         Subtask subtask = new Subtask("Купание", "Идем купаться", epic.getId());
         taskManager.addSubTask(subtask);
 
-        // Удаляем эпик
-        taskManager.deleteEpicByID(epic.getId());
+        taskManager.deleteEpicByID(epic.getId()); // удаляем эпик
 
-        // Проверяем, что подзадача тоже удалена
-        assertNull(taskManager.getSubtaskByID(subtask.getId()));
+        assertNull(taskManager.getSubtaskByID(subtask.getId())); // проверяем, что подзадача тоже удалена
     }
 
     // Проверяем невозможность задания некорректного идентификатора эпика у подзадачи
     @Test
     void invalidEpicIdShouldThrowException() {
-        // Подготовка
         try {
-            Subtask invalidSubtask = new Subtask("Некорректная", "Ошибка", -1); // создаём подзадачу с неверным эпиком
-            taskManager.addSubTask(invalidSubtask); // пробуем добавить подзадачу
-            fail("Исключение должно было произойти");
+            Subtask invalidSubtask = new Subtask("Некорректная", "Ошибка", -1); // неправильно задан эпик
+            taskManager.addSubTask(invalidSubtask); // добавляем подзадачу
+            fail("Должно было выбрасывать исключение");
         } catch (IllegalArgumentException e) {
             assertEquals("Неправильный идентификатор эпика", e.getMessage());
         }
     }
 
-    // Проверяем, что изменения полей через сеттеры не влияют на данные в менеджере
+    // Проверяем сохранение целевых данных после изменения через сеттеры
     @Test
     void changedFieldsThroughSettersDoNotAffectManagerData() {
-        // Создаем задачу
         Task task = new Task("Покупка хлеба", "Нужно купить хлеб");
         taskManager.addTask(task);
 
-        // Изменяем название через сеттер
-        task.setName("Новый хлеб");
+        task.setName("Новый хлеб"); // меняем имя через setter
 
-        // Проверяем, что менеджер возвращает старое название
         Task retrievedTask = taskManager.getTaskByID(task.getId());
-        assertEquals("Покупка хлеба", retrievedTask.getName());
+        assertEquals("Покупка хлеба", retrievedTask.getName()); // ожидаем прежнее имя
     }
 
-    // Проверяем корректность работы метода getDefault()
+    // Проверяем работу метода getDefault()
     @Test
     void getDefaultReturnsCorrectManagerType() {
         TaskManager defaultManager = Managers.getDefault();
         assertTrue(defaultManager instanceof InMemoryTaskManager);
     }
 
-    // Проверяем корректность работы метода getDefaultHistory()
+    // Проверяем работу метода getDefaultHistory()
     @Test
     void getDefaultHistoryReturnsCorrectHistoryType() {
         HistoryManager defaultHistory = Managers.getDefaultHistory();
