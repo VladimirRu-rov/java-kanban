@@ -18,37 +18,37 @@ public class AllTest {
 
     @BeforeEach
     void setup() {
-        taskManager = Managers.getDefault(); // получаем экземпляр менеджера задач
+        taskManager = Managers.getDefault(); // получение экземпляра менеджера задач
     }
 
-    // Тестируем сохранение старой версии задачи после обновления
+    // Сохранение старых версий задач после обновления
     @Test
     void shouldStoreOldVersionAfterUpdate() {
         Task initialTask = new Task("Первоначальная задача", "Описание");
         taskManager.addTask(initialTask);
-        taskManager.getTaskByID(initialTask.getId()); // видим задачу
+        taskManager.getTaskByID(initialTask.getId()); // посмотреть задачу
 
         Task updatedTask = new Task(initialTask.getId(), "Новое название", "Новое описание", Status.IN_PROGRESS);
         taskManager.updateTask(updatedTask);
 
         List<Task> history = taskManager.getHistory();
-        assertTrue(history.stream().anyMatch(t -> t.getName().equals("Первоначальная задача"))); // проверяем старую версию
+        assertTrue(history.stream().anyMatch(t -> t.getName().equals("Первоначальная задача"))); // проверяем наличие старой версии
     }
 
-    // Тестируем удаление задачи и её исчезновение из истории
+    // Проверка удаления задачи и её отсутствия в истории
     @Test
     void removedTaskShouldDisappearFromHistory() {
         Task task = new Task("Моя задача", "Пример");
         taskManager.addTask(task);
-        taskManager.getTaskByID(task.getId()); // просматриваем задачу
+        taskManager.getTaskByID(task.getId()); // просмотр задачи
 
         taskManager.deleteTaskByID(task.getId()); // удаляем задачу
 
         List<Task> history = taskManager.getHistory();
-        assertFalse(history.contains(task)); // проверяем отсутствие задачи в истории
+        assertFalse(history.contains(task)); // проверяем, что задача пропала из истории
     }
 
-    // Проверяем очистку связей подзадач после удаления
+    // Очистка связи подзадач после удаления
     @Test
     void deletedSubtaskShouldNotHaveOldIds() {
         Epic epic = new Epic("Отдых", "Планирую отдых");
@@ -62,7 +62,7 @@ public class AllTest {
         assertNull(taskManager.getSubtaskByID(subtask.getId())); // проверяем, что подзадачи нет
     }
 
-    // Проверяем очистку ссылок на подзадачи после удаления эпика
+    // Очистка ссылок на подзадачи после удаления эпика
     @Test
     void deletedEpicShouldClearSubtasks() {
         Epic epic = new Epic("Отдых", "Планирую отдых");
@@ -76,38 +76,38 @@ public class AllTest {
         assertNull(taskManager.getSubtaskByID(subtask.getId())); // проверяем, что подзадача тоже удалена
     }
 
-    // Проверяем невозможность задания некорректного идентификатора эпика у подзадачи
+    // Неправильный идентификатор эпика
     @Test
     void invalidEpicIdShouldThrowException() {
         try {
-            Subtask invalidSubtask = new Subtask("Некорректная", "Ошибка", -1); // неправильно задан эпик
+            Subtask invalidSubtask = new Subtask("Некорректная", "Ошибка", -1); // неверный ID эпика
             taskManager.addSubTask(invalidSubtask); // добавляем подзадачу
-            fail("Должно было выбрасывать исключение");
+            fail("Должно было выбросить исключение");
         } catch (IllegalArgumentException e) {
             assertEquals("Неправильный идентификатор эпика", e.getMessage());
         }
     }
 
-    // Проверяем сохранение целевых данных после изменения через сеттеры
+    // Изменения через сеттеры не должны влиять на данные в менеджере
     @Test
     void changedFieldsThroughSettersDoNotAffectManagerData() {
         Task task = new Task("Покупка хлеба", "Нужно купить хлеб");
         taskManager.addTask(task);
 
-        task.setName("Новый хлеб"); // меняем имя через setter
+        task.setName("Новый хлеб"); // меняем имя через сеттер
 
         Task retrievedTask = taskManager.getTaskByID(task.getId());
-        assertEquals("Покупка хлеба", retrievedTask.getName()); // ожидаем прежнее имя
+        assertEquals("Покупка хлеба", retrievedTask.getName()); // проверяем, что сохранилось старое имя
     }
 
-    // Проверяем работу метода getDefault()
+    // Тип возвращаемого значения методом getDefault()
     @Test
     void getDefaultReturnsCorrectManagerType() {
         TaskManager defaultManager = Managers.getDefault();
         assertTrue(defaultManager instanceof InMemoryTaskManager);
     }
 
-    // Проверяем работу метода getDefaultHistory()
+    // Тип возвращаемого значения методом getDefaultHistory()
     @Test
     void getDefaultHistoryReturnsCorrectHistoryType() {
         HistoryManager defaultHistory = Managers.getDefaultHistory();
