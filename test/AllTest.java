@@ -33,12 +33,12 @@ public class AllTest {
         Task updatedTask = new Task(initialTask.getId(), "Новое название", "Новое описание", Status.IN_PROGRESS);
         taskManager.updateTask(updatedTask);
 
-        // Проверяем, что в истории остается старая версия
+        // Проверяем, что в истории остаётся старая версия
         List<Task> history = taskManager.getHistory();
         assertTrue(history.stream().anyMatch(t -> t.getName().equals("Первоначальная задача")));
     }
 
-    // Тестируем удаление задачи и ее исчезновение из истории
+    // Тестируем удаление задачи и её исчезновение из истории
     @Test
     void removedTaskShouldDisappearFromHistory() {
         // Создаем задачу
@@ -51,7 +51,7 @@ public class AllTest {
 
         // Проверяем, что задача исчезла из истории
         List<Task> history = taskManager.getHistory();
-        assertFalse(history.contains(task));
+        assertFalse(history.contains(task)); // Задача должна отсутствовать в истории
     }
 
     // Проверяем очистку связей подзадач после удаления
@@ -68,7 +68,7 @@ public class AllTest {
         // Удаляем подзадачу
         taskManager.deleteSubtaskByID(subtask.getId());
 
-        // Проверяем, что подзадача не сохранилась ни в каком виде
+        // Проверяем, что подзадача была удалена
         assertNull(taskManager.getSubtaskByID(subtask.getId()));
     }
 
@@ -86,39 +86,39 @@ public class AllTest {
         // Удаляем эпик
         taskManager.deleteEpicByID(epic.getId());
 
-        // Проверяем, что подзадача удалена
+        // Проверяем, что подзадача тоже удалена
         assertNull(taskManager.getSubtaskByID(subtask.getId()));
     }
 
-    // Проверяем невозможность задать некорректный идентификатор эпика у подзадачи
+    // Проверяем невозможность задания некорректного идентификатора эпика у подзадачи
     @Test
     void invalidEpicIdShouldThrowException() {
-        // Создаем подзадачу с неправильным идентификатором эпика
+        // Подготовка
         try {
-            Subtask invalidSubtask = new Subtask("Некорректная", "Ошибка", -1);
-            taskManager.addSubTask(invalidSubtask);
-            fail("Исключительная ситуация не произошла");
+            Subtask invalidSubtask = new Subtask("Некорректная", "Ошибка", -1); // создаём подзадачу с неверным эпиком
+            taskManager.addSubTask(invalidSubtask); // пробуем добавить подзадачу
+            fail("Исключение должно было произойти");
         } catch (IllegalArgumentException e) {
             assertEquals("Неправильный идентификатор эпика", e.getMessage());
         }
     }
 
-    // Проверяем сохранение целевых данных после изменения через сеттеры
+    // Проверяем, что изменения полей через сеттеры не влияют на данные в менеджере
     @Test
     void changedFieldsThroughSettersDoNotAffectManagerData() {
         // Создаем задачу
         Task task = new Task("Покупка хлеба", "Нужно купить хлеб");
         taskManager.addTask(task);
 
-        // Меняем название через сеттер
+        // Изменяем название через сеттер
         task.setName("Новый хлеб");
 
-        // Проверяем, что менеджер продолжает показывать оригинальное название
+        // Проверяем, что менеджер возвращает старое название
         Task retrievedTask = taskManager.getTaskByID(task.getId());
         assertEquals("Покупка хлеба", retrievedTask.getName());
     }
 
-    // Проверяем коректность работы метода getDefault()
+    // Проверяем корректность работы метода getDefault()
     @Test
     void getDefaultReturnsCorrectManagerType() {
         TaskManager defaultManager = Managers.getDefault();
@@ -131,5 +131,4 @@ public class AllTest {
         HistoryManager defaultHistory = Managers.getDefaultHistory();
         assertTrue(defaultHistory instanceof InMemoryHistoryManager);
     }
-}
 
