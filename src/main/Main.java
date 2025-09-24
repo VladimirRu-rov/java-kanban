@@ -38,6 +38,7 @@ public class Main {
         taskManager.addEpic(epicFunny);
 
         // Добавляем подзадачи в первый эпик
+
         Subtask subTask11 = new Subtask("Крыло", "Покрасить крыло", epicPaintCar.getId());
         Subtask subTask12 = new Subtask("Левый порог", "Покрасить левый порог", epicPaintCar.getId());
         Subtask subTask13 = new Subtask("Правый порог", "Покрасить правый порог", epicPaintCar.getId());
