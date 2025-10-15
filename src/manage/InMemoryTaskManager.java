@@ -41,7 +41,9 @@ public class InMemoryTaskManager implements TaskManager {
     // Метод для добавления новой субзадачи (task.Subtask)
     @Override
     public Subtask addSubTask(Subtask subtask) {
-        subtask.setId(getNextId());
+        if (!epics.containsKey(subtask.getEpicId())) {
+            throw new IllegalArgumentException("Указанный эпик не найден.");
+        }
         Epic epic = epics.get(subtask.getEpicId());
         epic.addSubTask(subtask);
         subtasks.put(subtask.getId(), subtask);
@@ -182,7 +184,12 @@ public class InMemoryTaskManager implements TaskManager {
     // Метод для удаления задачи по её идентификатору
     @Override
     public Task deleteTaskByID(int id) {
-        return tasks.remove(id);
+        Task task = tasks.remove(id);
+        if (task != null) {
+            // Здесь уведомляем менеджера истории о необходимости удаления задачи
+            historyManager.remove(id);
+        }
+        return task;
     }
 
     @Override
