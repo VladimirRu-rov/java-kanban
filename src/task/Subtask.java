@@ -23,12 +23,17 @@ public class Subtask extends Task {
 
     @Override
     public String toString() {
-        return "task.Subtask{" +
-                "name='" + getName() + '\'' +
-                ", description='" + getDescription() + '\'' +
-                ", id=" + getId() +
-                ", epicID=" + epicId +
-                ", status=" + getStatus() +
-                '}';
+        return "Подзадача -- " +
+                "Название: " + getName() +
+                ". Описание: " + getDescription() +
+                ". id = " + getId() +
+                ". epicID = " + epicId +
+                ". Статус: " + getStatus() +
+                '.';
+    }
+    // Метод для вывода текста в файл
+    @Override
+    public String toCsvString() {
+        return getId() + "," + getTaskType() + "," + getName() + "," + getStatus() + "," + getDescription() + "," + epicId + ",";
     }
 }
