@@ -111,6 +111,6 @@ public class Task {
 
     // Метод для вывода текста в файл
     public String toCsvString() {
-        return id + "," + getTaskType() + "," + name + "," + status + "," + description + "," ;
+        return id + "," + getTaskType() + "," + name + "," + status + "," + description + ",";
     }
 }
