@@ -49,7 +49,4 @@ public interface TaskManager {
     Subtask deleteSubtaskByID(int id);
 
     List<Task> getHistory();
-
-    void add(Task task);
 }
-
