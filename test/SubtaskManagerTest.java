@@ -11,12 +11,12 @@ public class SubtaskManagerTest {
     private TaskManager taskManager;
 
     @BeforeEach
-    void setup() {
+    public void setup() {
         taskManager = Managers.getDefault();
     }
 
     @Test
-    void invalidEpicIdShouldThrowException() {
+    public void invalidEpicIdShouldThrowException() {
         try {
             Subtask invalidSubtask = new Subtask("Некорректная", "Ошибка", -1);
             taskManager.addSubTask(invalidSubtask);
