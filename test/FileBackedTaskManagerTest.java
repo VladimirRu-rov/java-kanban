@@ -12,7 +12,7 @@ import java.nio.file.Paths;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class FileBackedTaskManagerTest {
+public class FileBackedTaskManagerTest {
 
     private static final String TEST_FILE_PATH = "test_file.csv";
 
