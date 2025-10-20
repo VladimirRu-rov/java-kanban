@@ -141,7 +141,7 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
             lines.addAll(getEpics.stream()
                     .map(Task::toCsvString).toList());
 
-            lines.addAll(getSubtasks..stream()
+            lines.addAll(getSubtasks.stream()
                     .map(Task::toCsvString).toList());
 
             Files.writeString(Paths.get(file.getAbsolutePath()), String.join("\n", lines));
