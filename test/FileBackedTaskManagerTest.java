@@ -24,7 +24,7 @@ public class FileBackedTaskManagerTest {
     }
 
     @Test
-    void testSaveAndLoadEmptyFile() {
+    public void testSaveAndLoadEmptyFile() {
         // Создаем новый менеджер задач с тестовым файлом
         File testFile = new File(TEST_FILE_PATH);
         FileBackedTaskManager manager = new FileBackedTaskManager(testFile);
@@ -45,7 +45,7 @@ public class FileBackedTaskManagerTest {
     }
 
     @Test
-    void testSaveMultipleTasks() throws Exception {
+    public void testSaveMultipleTasks() throws Exception {
         File testFile = new File(TEST_FILE_PATH);
         FileBackedTaskManager manager = new FileBackedTaskManager(testFile);
 
@@ -64,7 +64,7 @@ public class FileBackedTaskManagerTest {
     }
 
     @Test
-    void testLoadMultipleTasks() {
+    public void testLoadMultipleTasks() {
         File testFile = new File(TEST_FILE_PATH);
         FileBackedTaskManager manager = new FileBackedTaskManager(testFile);
 
