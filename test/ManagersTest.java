@@ -5,13 +5,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ManagersTest {
     @Test
-    void getDefaultReturnsCorrectManagerType() {
+    public void getDefaultReturnsCorrectManagerType() {
         TaskManager defaultManager = Managers.getDefault();
         assertTrue(defaultManager instanceof InMemoryTaskManager);
     }
 
     @Test
-    void getDefaultHistoryReturnsCorrectHistoryType() {
+    public void getDefaultHistoryReturnsCorrectHistoryType() {
         HistoryManager defaultHistory = Managers.getDefaultHistory();
         assertTrue(defaultHistory instanceof InMemoryHistoryManager);
     }
