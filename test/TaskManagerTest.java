@@ -15,12 +15,12 @@ public class TaskManagerTest {
     private TaskManager taskManager;
 
     @BeforeEach
-    void setup() {
+    public void setup() {
         taskManager = Managers.getDefault();
     }
 
     @Test
-    void shouldStoreOldVersionAfterUpdate() {
+    public void shouldStoreOldVersionAfterUpdate() {
         Task initialTask = new Task("Первоначальная задача", "Описание");
         taskManager.addTask(initialTask);
         taskManager.getTaskByID(initialTask.getId());
@@ -33,7 +33,7 @@ public class TaskManagerTest {
     }
 
     @Test
-    void removedTaskShouldDisappearFromHistory() {
+    public void removedTaskShouldDisappearFromHistory() {
         Task task = new Task("Моя задача", "Пример");
         taskManager.addTask(task);
         taskManager.getTaskByID(task.getId());
@@ -43,7 +43,7 @@ public class TaskManagerTest {
     }
 
     @Test
-    void deletedSubtaskShouldNotHaveOldIds() {
+    public void deletedSubtaskShouldNotHaveOldIds() {
         Epic epic = new Epic("Отдых", "Планирую отдых");
         taskManager.addEpic(epic);
 
@@ -55,7 +55,7 @@ public class TaskManagerTest {
     }
 
     @Test
-    void deletedEpicShouldClearSubtasks() {
+    public void deletedEpicShouldClearSubtasks() {
         Epic epic = new Epic("Отдых", "Планирую отдых");
         taskManager.addEpic(epic);
 
