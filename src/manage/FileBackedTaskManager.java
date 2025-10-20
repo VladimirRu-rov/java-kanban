@@ -135,13 +135,13 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
             lines.add("id,type,name,status,description,epic");
 
             // Собираем все задачи
-            lines.addAll(getTasks.stream()
+            lines.addAll(super.getTasks.stream()
                     .map(Task::toCsvString).toList());
 
-            lines.addAll(getEpics.stream()
+            lines.addAll(super.getEpics.stream()
                     .map(Task::toCsvString).toList());
 
-            lines.addAll(getSubtasks.stream()
+            lines.addAll(super.getSubtasks.stream()
                     .map(Task::toCsvString).toList());
 
             Files.writeString(Paths.get(file.getAbsolutePath()), String.join("\n", lines));
