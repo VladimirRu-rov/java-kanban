@@ -3,7 +3,6 @@ package task;
 import java.util.Objects;
 
 public class Task {
-
     private String name;
     private String description;
     private int id;
@@ -19,9 +18,10 @@ public class Task {
     public Task(String name, String description) {
         this.name = name;
         this.description = description;
-        this.status = Status.NEW; // Изначально задаем статус NEW
+        this.status = Status.NEW;
     }
 
+    // Геттеры и сеттеры
     public String getName() {
         return name;
     }
@@ -54,7 +54,48 @@ public class Task {
         this.status = status;
     }
 
-    // Переопределение метода equals для сравнения задач
+    // Новый метод для определения типа задачи
+    public TaskType getTaskType() {
+        if (this instanceof Epic) {
+            return TaskType.EPIC;
+        } else if (this instanceof Subtask) {
+            return TaskType.SUBTASK;
+        }
+        return TaskType.TASK;
+    }
+
+    @Override
+    public String toString() {
+        return id + "," + getTaskType() + "," + name + "," + status + "," + description + ",";
+    }
+
+    // Метод для создания задачи из строки CSV
+    public static Task fromString(String line) {
+        String[] parts = line.split(",", -1); // Используем "-1", чтобы учитывать пустые поля
+
+        if (parts.length < 6) {
+            throw new IllegalArgumentException("Ошибка в формате CSV: недостаточно полей в строке [" + line + "]");
+        }
+
+        int id = Integer.parseInt(parts[0].trim());
+        TaskType type = TaskType.valueOf(parts[1].trim());
+        String name = parts[2].trim();
+        Status status = Status.valueOf(parts[3].trim());
+        String description = parts[4].trim();
+
+        switch (type) {
+            case TASK:
+                return new Task(id, name, description, status);
+            case EPIC:
+                return new Epic(id, name, description, status);
+            case SUBTASK:
+                int epicId = Integer.parseInt(parts[5].trim());
+                return new Subtask(id, name, description, status, epicId);
+            default:
+                throw new IllegalArgumentException("Ошибка в формате CSV: неизвестный тип задачи [" + type + "]");
+        }
+    }
+
     @Override
     public boolean equals(Object object) {
         if (this == object) return true;
@@ -63,18 +104,13 @@ public class Task {
         return id == task.id;
     }
 
-    @Override// Формула для генерации хэш-кода задачи
+    @Override
     public int hashCode() {
         return Objects.hashCode(id);
     }
-    
-    @Override
-    public String toString() {
-        return "task.Task{" +
-                "name='" + name + '\'' +
-                ", description='" + description + '\'' +
-                ", id=" + id +
-                ", status=" + status +
-                '}';
+
+    // Метод для вывода текста в файл
+    public String toCsvString() {
+        return id + "," + getTaskType() + "," + name + "," + status + "," + description + ",";
     }
 }
