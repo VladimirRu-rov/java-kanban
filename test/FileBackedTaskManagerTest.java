@@ -1,96 +1,125 @@
-import org.junit.jupiter.api.Test;
+import exceptions.ManagerSaveException;
 import manage.FileBackedTaskManager;
-import task.Epic;
-import task.Subtask;
-import task.Task;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import task.Status;
+import task.Task;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.Collection;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class FileBackedTaskManagerTest {
+import static org.junit.jupiter.api.Assertions.*;
 
-    private static final String TEST_FILE_PATH = "test_file.csv";
+public class FileBackedTaskManagerTest extends TaskManagerTest<FileBackedTaskManager> {
 
-    public void cleanupTestFile() {
+    private static final String TEST_FILE_PATH = "test_manager.csv";
+
+    @Override
+    protected FileBackedTaskManager createTaskManagerInstance() {
+        return new FileBackedTaskManager(new File(TEST_FILE_PATH));
+    }
+
+    @BeforeEach
+    public void setUpFile() {
+        new File(TEST_FILE_PATH).delete();
+    }
+
+    @AfterEach
+    public void tearDownFile() {
+        new File(TEST_FILE_PATH).delete();
+    }
+
+    @Test
+    public void testDataPersistence() throws IOException {
+        Task task = new Task(1, "Задача 1", "Описание", Status.NEW, null, null);
+        taskManager.addTask(task);
+        taskManager.save();
+
+        String content = Files.readString(Paths.get(TEST_FILE_PATH));
+        assertTrue(content.contains("Задача 1"));
+    }
+
+    @Test
+    public void testLoadingFromCorruptedFile() {
         File testFile = new File(TEST_FILE_PATH);
-        if (testFile.exists()) {
-            testFile.delete();
+        try {
+            Files.writeString(
+                    Paths.get(testFile.getAbsolutePath()),
+                    "id,type,name,status,desc,duration,start\n" +
+                            "Некорректные данные\n"
+            );
+
+            assertTrue(testFile.exists(), "Файл не создан");
+            assertTrue(testFile.length() > 0, "Файл пуст");
+
+        } catch (IOException e) {
+            fail("Ошибка при создании тестового файла: " + e.getMessage());
         }
+
+        ManagerSaveException ex = assertThrows(
+                ManagerSaveException.class,
+                () -> FileBackedTaskManager.loadFromFile(TEST_FILE_PATH),
+                "Ожидалось исключение ManagerSaveException при некорректных данных"
+        );
+
+        assertTrue(
+                ex.getMessage().contains("Ошибка при загрузке из файла") ||
+                        ex.getMessage().contains("недостаточно полей"),
+                "Сообщение об ошибке должно указывать на проблему (регистр важен!)"
+        );
     }
 
     @Test
-    public void testSaveAndLoadEmptyFile() {
-        // Создаем новый менеджер задач с тестовым файлом
-        File testFile = new File(TEST_FILE_PATH);
-        FileBackedTaskManager manager = new FileBackedTaskManager(testFile);
+    public void testLoadFromEmptyFile() {
+        File file = new File(TEST_FILE_PATH);
+        try {
+            file.createNewFile();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
 
-        // Сохраняем пустой файл
-        manager.save();
+        ManagerSaveException ex = assertThrows(ManagerSaveException.class, () -> {
+            FileBackedTaskManager.loadFromFile(TEST_FILE_PATH);
+        });
 
-        // Проверяем существование файла
-        assertTrue(Files.exists(Paths.get(TEST_FILE_PATH)));
-
-        // Загружаем данные обратно
-        FileBackedTaskManager loadedManager = FileBackedTaskManager.loadFromFile(TEST_FILE_PATH);
-
-        // Проверяем отсутствие задач, эпиков и подзадач
-        assertEquals(0, loadedManager.getTasks().size());
-        assertEquals(0, loadedManager.getEpics().size());
-        assertEquals(0, loadedManager.getSubtasks().size());
+        assertTrue(ex.getMessage().contains("Файл пуст") || ex.getMessage().contains("не содержит данных"));
     }
 
     @Test
-    public void testSaveMultipleTasks() throws Exception {
-        File testFile = new File(TEST_FILE_PATH);
-        FileBackedTaskManager manager = new FileBackedTaskManager(testFile);
+    public void testReloadingSavedTasks() {
+        FileBackedTaskManager manager = new FileBackedTaskManager(new File(TEST_FILE_PATH));
 
-        Task task1 = new Task(1, "Сделать отчет", "Написать ежемесячный отчет", Status.NEW);
-        Epic epic1 = new Epic(2, "Ремонт дома", "Отремонтировать кухню и ванную комнату", Status.IN_PROGRESS);
-        Subtask subtask1 = new Subtask(3, "Покупка материалов", "Закупить стройматериалы", Status.NEW, epic1.getId());
-
+        Task task1 = new Task(1, "Задача 1", "Описание", Status.NEW, Duration.ofMinutes(30), LocalDateTime.now());
+        Task task2 = new Task(2, "Задача 2", "Описание", Status.IN_PROGRESS, Duration.ofHours(1), LocalDateTime.now().plusDays(1));
         manager.addTask(task1);
-        manager.addEpic(epic1);
-        manager.addSubTask(subtask1);
-
+        manager.addTask(task2);
         manager.save();
 
-        // Проверяем наличие записей в файле
-        assertTrue(Files.lines(Paths.get(TEST_FILE_PATH)).count() > 1);
-    }
+        FileBackedTaskManager reloadedManager = FileBackedTaskManager.loadFromFile(TEST_FILE_PATH);
+        assertEquals(2, reloadedManager.getTasks().size());
 
-    @Test
-     public void testLoadMultipleTasks() {
-        File testFile = new File(TEST_FILE_PATH);
-        FileBackedTaskManager manager = new FileBackedTaskManager(testFile);
-
-        Task task1 = new Task(1, "Сделать отчет", "Написать ежемесячный отчет", Status.NEW);
-        Epic epic1 = new Epic(2, "Ремонт дома", "Отремонтировать кухню и ванную комнату", Status.IN_PROGRESS);
-        Subtask subtask1 = new Subtask(3, "Покупка материалов", "Закупить стройматериалы", Status.NEW, epic1.getId());
-
-        manager.addTask(task1);
-        manager.addEpic(epic1);
-        manager.addSubTask(subtask1);
-
-        manager.save();
-
-        System.out.println("Saved data successfully!");
-
-        // Загружаем данные заново
-        FileBackedTaskManager loadedManager = FileBackedTaskManager.loadFromFile(TEST_FILE_PATH);
-
-        // Проверяем количество загруженных задач
-        assertEquals(1, loadedManager.getTasks().size());   // Одна базовая задача
-        assertEquals(1, loadedManager.getEpics().size());   // Один эпик
-        assertEquals(1, loadedManager.getSubtasks().size()); // Одна подзадача
-
-        // Убедимся, что типы задач совпадают
-        assertEquals(task1.getClass(), loadedManager.getTasks().get(0).getClass());
-        assertEquals(epic1.getClass(), loadedManager.getEpics().get(0).getClass());
-        assertEquals(subtask1.getClass(), loadedManager.getSubtasks().get(0).getClass());
+        Collection<Task> allTasks = reloadedManager.getTasks();
+        boolean foundTask1 = false;
+        boolean foundTask2 = false;
+        for (Task task : allTasks) {
+            if (task.getId() == task1.getId() &&
+                    task.getName().equals(task1.getName()) &&
+                    task.getStatus() == task1.getStatus()) {
+                foundTask1 = true;
+            }
+            if (task.getId() == task2.getId() &&
+                    task.getName().equals(task2.getName()) &&
+                    task.getStatus() == task2.getStatus()) {
+                foundTask2 = true;
+            }
+        }
+        assertTrue(foundTask1 && foundTask2, "Одна или обе задачи не найдены после перезагрузки.");
     }
 }

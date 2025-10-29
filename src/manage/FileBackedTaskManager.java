@@ -7,28 +7,27 @@ import task.Task;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 public class FileBackedTaskManager extends InMemoryTaskManager {
     private final File file;
     private static final String DEFAULT_FILE_PATH = "./data/ха-ха-ха.csv";
 
-    // Конструктор с путем по умолчанию
     public FileBackedTaskManager() {
         this.file = new File(DEFAULT_FILE_PATH);
         initFile();
     }
 
-    // Конструктор с возможностью указать свой путь
     public FileBackedTaskManager(File file) {
         this.file = file;
         initFile();
     }
 
-    // Инициализация файла и директории
     private void initFile() {
         File parentDir = file.getParentFile();
         if (parentDir != null && !parentDir.exists()) {
@@ -38,7 +37,6 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
         }
 
         try {
-            // Создаем сам файл, если его нет
             if (!file.exists()) {
                 Files.createFile(Paths.get(file.getAbsolutePath()));
             }
@@ -75,12 +73,19 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
         return updatedTask;
     }
 
+
     @Override
     public Epic updateEpic(Epic epic) {
-        Epic updatedEpic = super.updateEpic(epic);
+        Integer epicID = epic.getId();
+        if (epicID == null || !getEpicsMap().containsKey(epicID)) {
+            return null;
+        }
+        updateEpicStatus(epic);
+        getEpicsMap().replace(epicID, epic);
         save();
-        return updatedEpic;
+        return epic;
     }
+
 
     @Override
     public Subtask updateSubtask(Subtask subtask) {
@@ -128,58 +133,91 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
         return deletedSubtask;
     }
 
-    // Метод сохранения (продолжение)
     public void save() {
         try {
             List<String> lines = new ArrayList<>();
-            lines.add("id,type,name,status,description,epic");
 
-            // Собираем все задачи
-            lines.addAll(super.getTasks().stream()
-                    .map(Task::toCsvString).toList());
+            lines.add("id,type,name,status,description,duration,startTime,endTime,epicId");
+            lines.addAll(
+                    Stream.of(super.getTasks(), super.getEpics(), super.getSubtasks())
+                            .flatMap(List::stream)
+                            .map(task -> {
+                                String baseLine = task.toCsvString();
+                                // Для Subtask добавляем epicId в конец
+                                if (task instanceof Subtask) {
+                                    return baseLine + "," + ((Subtask) task).getEpicId();
+                                }
+                                // Для Task и Epic добавляем пустое поле epicId
+                                return baseLine + ",";
+                            })
+                            .toList()
+            );
 
-            // Преобразуем эпики в строки CSV
-            lines.addAll(super.getEpics().stream()
-                    .map(Task::toCsvString).toList());
+            // Запись с явным указанием кодировки UTF-8
+            Files.writeString(
+                    Paths.get(file.getAbsolutePath()),
+                    String.join("\n", lines),
+                    StandardCharsets.UTF_8
+            );
 
-            // Преобразуем подзадачи в строки CSV
-            lines.addAll(super.getSubtasks().stream()
-                    .map(Task::toCsvString).toList());
-
-            Files.writeString(Paths.get(file.getAbsolutePath()), String.join("\n", lines));
         } catch (IOException e) {
-            throw new ManagerSaveException("Ошибка при сохранении в файл: " + e.getMessage());
+            throw new ManagerSaveException("Ошибка при сохранении в файл: " + e.getMessage(), e);
         }
     }
 
-    // Метод загрузки из файла
-    public static FileBackedTaskManager loadFromFile(String filePath) {
+    public static FileBackedTaskManager loadFromFile(String filePath) throws ManagerSaveException {
         File file = new File(filePath);
         try {
             String content = Files.readString(Paths.get(file.getAbsolutePath()));
-            String[] lines = content.split("\n");
 
+            // Проверка: файл пуст или содержит только заголовок
+            if (content.trim().isEmpty() || content.trim().split("\n").length <= 1) {
+                throw new ManagerSaveException("Файл пуст или не содержит данных (только заголовок)");
+            }
+
+            String[] lines = content.split("\n");
             FileBackedTaskManager manager = new FileBackedTaskManager(file);
 
-            // Пропускаем первую строку с заголовками
+            List<Epic> epicsToAdd = new ArrayList<>();
+            List<Subtask> subtasksToAdd = new ArrayList<>();
+            List<Task> tasksToAdd = new ArrayList<>();
+
             for (int i = 1; i < lines.length; i++) {
                 String line = lines[i];
-                if (!line.isEmpty()) {
-                    Task task = Task.fromString(line);
+                if (line.isEmpty()) continue;
 
-                    // Распределение задач по правильным коллекциям
-                    if (task.getClass() == Subtask.class) {
-                        manager.addSubTask((Subtask) task);
-                    } else if (task.getClass() == Epic.class) {
-                        manager.addEpic((Epic) task);
-                    } else if (task.getClass() == Task.class) {
-                        manager.addTask((Task) task);
+                String[] fields = line.split(",");
+                if (fields.length < 7) {
+                    throw new ManagerSaveException(
+                            "Ошибка при загрузке из файла: недостаточно полей в строке '" + line + "'"
+                    );
+                }
+
+                try {
+                    Task task = Task.fromString(line);
+                    if (task instanceof Subtask) {
+                        subtasksToAdd.add((Subtask) task);
+                    } else if (task instanceof Epic) {
+                        epicsToAdd.add((Epic) task);
+                    } else {
+                        tasksToAdd.add(task);
                     }
+                } catch (IllegalArgumentException e) {
+                    throw new ManagerSaveException(
+                            "Ошибка парсинга строки '" + line + "': " + e.getMessage(),
+                            e
+                    );
                 }
             }
+
+            epicsToAdd.forEach(manager::addEpic);
+            subtasksToAdd.forEach(manager::addSubTask);
+            tasksToAdd.forEach(manager::addTask);
+
             return manager;
+
         } catch (IOException e) {
-            throw new ManagerSaveException("Ошибка при загрузке из файла: " + e.getMessage());
+            throw new ManagerSaveException("Ошибка при загрузке из файла: " + e.getMessage(), e);
         }
     }
 }

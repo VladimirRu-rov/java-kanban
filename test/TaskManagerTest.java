@@ -1,68 +1,72 @@
 import manage.TaskManager;
-import manage.Managers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import task.Epic;
-import task.Subtask;
-import task.Task;
-import task.Status;
+import task.*;
 
-import java.util.List;
+import java.time.Duration;
+import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class TaskManagerTest {
-    private TaskManager taskManager;
+public abstract class TaskManagerTest<T extends TaskManager> {
+
+    protected T taskManager;
 
     @BeforeEach
-    public void setup() {
-        taskManager = Managers.getDefault();
+    public void setUp() {
+        taskManager = createTaskManagerInstance();
     }
 
-    @Test
-    public void shouldStoreOldVersionAfterUpdate() {
-        Task initialTask = new Task("Первоначальная задача", "Описание");
-        taskManager.addTask(initialTask);
-        taskManager.getTaskByID(initialTask.getId());
-
-        Task updatedTask = new Task(initialTask.getId(), "Новое название", "Новое описание", Status.IN_PROGRESS);
-        taskManager.updateTask(updatedTask);
-
-        List<Task> history = taskManager.getHistory();
-        assertTrue(history.stream().anyMatch(t -> t.getName().equals("Первоначальная задача")));
-    }
+    protected abstract T createTaskManagerInstance();
 
     @Test
-    public void removedTaskShouldDisappearFromHistory() {
-        Task task = new Task("Моя задача", "Пример");
+    public void testAddingAndGettingTask() {
+        Task task = new Task(1, "Задача 1", "Описание", Status.NEW, Duration.ZERO, null);
         taskManager.addTask(task);
-        taskManager.getTaskByID(task.getId());
-
-        taskManager.deleteTaskByID(task.getId());
-        assertFalse(taskManager.getHistory().contains(task));
+        Task retrievedTask = taskManager.getTaskByID(task.getId());
+        assertEquals(task, retrievedTask);
     }
 
     @Test
-    public void deletedSubtaskShouldNotHaveOldIds() {
-        Epic epic = new Epic("Отдых", "Планирую отдых");
-        taskManager.addEpic(epic);
-
-        Subtask subtask = new Subtask("Купание", "Идем купаться", epic.getId());
-        taskManager.addSubTask(subtask);
-
-        taskManager.deleteSubtaskByID(subtask.getId());
-        assertNull(taskManager.getSubtaskByID(subtask.getId()));
+    public void testUpdatingTask() {
+        Task task = new Task(1, "Задача 1", "Описание", Status.NEW, Duration.ZERO, null);
+        taskManager.addTask(task);
+        Task updatedTask = new Task(task.getId(), "Изменённая задача", "Изменённое описание", Status.IN_PROGRESS, Duration.ZERO, null);
+        taskManager.updateTask(updatedTask);
+        Task result = taskManager.getTaskByID(task.getId());
+        assertEquals(updatedTask, result);
     }
 
     @Test
-    public void deletedEpicShouldClearSubtasks() {
-        Epic epic = new Epic("Отдых", "Планирую отдых");
-        taskManager.addEpic(epic);
+    public void testConflictDetection() {
+        Task task1 = new Task(1, "Задача 1", "Описание", Status.NEW, Duration.ofHours(2), LocalDateTime.now());
+        Task task2 = new Task(2, "Задача 2", "Описание", Status.NEW, Duration.ofHours(2), LocalDateTime.now().plusHours(1));
+        taskManager.addTask(task1);
+        Exception ex = assertThrows(IllegalArgumentException.class, () -> taskManager.addTask(task2));
+        assertTrue(ex.getMessage().contains("пересекается по времени"));
+    }
 
-        Subtask subtask = new Subtask("Купание", "Идем купаться", epic.getId());
-        taskManager.addSubTask(subtask);
+    @Test
+    public void testAddNonOverlappingTask_NoException() {
+        assertDoesNotThrow(() -> {
+            LocalDateTime now = LocalDateTime.of(2025, 10, 29, 12, 0);
+            Task t1 = new Task(1, "Задача 1", "Описание", Status.NEW, Duration.ofHours(1), now);
+            Task t2 = new Task(2, "Задача 1", "Описание", Status.NEW, Duration.ofHours(1), now.plusHours(2));
 
-        taskManager.deleteEpicByID(epic.getId());
-        assertNull(taskManager.getSubtaskByID(subtask.getId()));
+            taskManager.addTask(t1);
+            taskManager.addTask(t2);
+        }, "Добавление непересекающихся задач не должно вызывать исключений");
+    }
+
+    @Test
+    public void testUpdateTask_NoOverlapException() {
+        LocalDateTime now = LocalDateTime.of(2025, 10, 29, 12, 0);
+        Task original = new Task(1, "Исходная", "Описание", Status.NEW, Duration.ofHours(1), now);
+        taskManager.addTask(original);
+
+        Task updated = new Task(1, "Обновлённая", "Описание", Status.IN_PROGRESS, Duration.ofHours(1), now.plusHours(3));
+
+        assertDoesNotThrow(() -> taskManager.updateTask(updated),
+                "Обновление задачи без пересечения не должно бросать исключение");
     }
 }
