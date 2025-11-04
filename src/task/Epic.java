@@ -10,51 +10,65 @@ public class Epic extends Task {
 
     public Epic(int id, String name, String description, Status status,
                 Duration duration, LocalDateTime startTime) {
-        super();
-        setId(id);
-        setName(name);
-        setDescription(description);
-        setStatus(status);
+        super(id, name, description, status);
         setDuration(duration);
         setStartTime(startTime);
+        recalculateEpicTimes();
     }
 
     public void addSubTask(Subtask subtask) {
         subTaskList.add(subtask);
-        calculateEpicTime();
+        recalculateEpicTimes();
     }
 
     public void clearSubtasks() {
         subTaskList.clear();
-        calculateEpicTime();
+        recalculateEpicTimes();
     }
 
     public void setSubtaskList(ArrayList<Subtask> subtaskList) {
         this.subTaskList = subtaskList;
-        calculateEpicTime();
+        recalculateEpicTimes();
     }
 
-    private void calculateEpicTime() {
+    private void calculateEpicDuration() {
         if (subTaskList.isEmpty()) {
             setDuration(Duration.ofMinutes(0));
+            return;
+        }
+
+        Duration totalDuration = subTaskList.stream()
+                .filter(subtask -> subtask.getDuration() != null)
+                .map(Subtask::getDuration)
+                .reduce(Duration.ZERO, Duration::plus);
+        setDuration(totalDuration);
+    }
+
+    private void calculateEpicStartTime() {
+        if (subTaskList.isEmpty()) {
             setStartTime(null);
             return;
         }
 
-        // Определяем общую длительность
-        Duration totalDuration = subTaskList.stream()
-                .filter(subtask -> subtask.getDuration() != null) // фильтруем задачи с null-длительностью
-                .map(Subtask::getDuration)
-                .reduce(Duration.ZERO, Duration::plus);
-        setDuration(totalDuration);
-
-        // Находим самое раннее время начала среди подзадач
         LocalDateTime earliestStart = subTaskList.stream()
-                .filter(subtask -> subtask.getStartTime() != null) // фильтруем задачи с null-временем
+                .filter(subtask -> subtask.getStartTime() != null)
                 .map(Subtask::getStartTime)
                 .min(LocalDateTime::compareTo)
                 .orElse(null);
         setStartTime(earliestStart);
+    }
+
+    private void calculateEpicEndTime() {
+        if (subTaskList.isEmpty()) {
+            return;
+        }
+
+        LocalDateTime latestEnd = subTaskList.stream()
+                .map(Subtask::getEndTime)
+                .filter(Objects::nonNull)
+                .max(LocalDateTime::compareTo)
+                .orElse(null);
+        setEndTime(latestEnd);
     }
 
     @Override
@@ -66,6 +80,12 @@ public class Epic extends Task {
                 .filter(Objects::nonNull) // 👈 добавляем фильтрацию, чтобы отбрасывать null-значения
                 .max(LocalDateTime::compareTo)
                 .orElse(null);
+    }
+
+    private void recalculateEpicTimes() {
+        calculateEpicDuration();
+        calculateEpicStartTime();
+        calculateEpicEndTime();
     }
 
     public ArrayList<Subtask> getSubTaskList() {
@@ -84,17 +104,5 @@ public class Epic extends Task {
                 ", subtaskList.size = " + subTaskList.size() +
                 ", Статус: " + getStatus() +
                 '.';
-    }
-
-    @Override
-    public String toCsvString() {
-        return getId() + "," +
-                getTaskType() + "," +
-                getName() + "," +
-                getStatus() + "," +
-                getDescription() + "," +
-                (getDuration() != null ? getDuration().toMinutes() : "") + "," +
-                (getStartTime() != null ? getStartTime().format(DATE_FORMATTER) : "") + "," +
-                (getEndTime() != null ? getEndTime().format(DATE_FORMATTER) : "");
     }
 }

@@ -1,4 +1,6 @@
-import manage.TaskManager;
+package manager;
+
+import manager.task.TaskManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import task.*;

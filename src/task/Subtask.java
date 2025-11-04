@@ -6,9 +6,12 @@ import java.time.LocalDateTime;
 public class Subtask extends Task {
     private final int epicId;
 
-    public Subtask(int id, String name, String description, Status status, Duration duration, LocalDateTime startTime, int epicId) {
-        super(id, name, description, status, duration, startTime);
+    public Subtask(int id, String name, String description, Status status,
+                   Duration duration, LocalDateTime startTime, int epicId) {
+        super(id, name, description, status);
         this.epicId = epicId;
+        setDuration(duration);
+        setStartTime(startTime);
     }
 
     public int getEpicId() {
@@ -26,17 +29,5 @@ public class Subtask extends Task {
                 ". Начало: " + getStartTime() +
                 ". Статус: " + getStatus() +
                 '.';
-    }
-
-    @Override
-    public String toCsvString() {
-        return getId() + "," +
-                getTaskType() + "," +
-                getName() + "," +
-                getStatus() + "," +
-                getDescription() + "," +
-                getDuration().toMinutes() + "," +
-                (getStartTime() != null ? getStartTime().format(DATE_FORMATTER) : "") + "," +
-                getEpicId();
     }
 }

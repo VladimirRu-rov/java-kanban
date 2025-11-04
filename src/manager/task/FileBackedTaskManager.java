@@ -1,4 +1,4 @@
-package manage;
+package manager.task;
 
 import exceptions.ManagerSaveException;
 import task.Epic;
@@ -16,7 +16,7 @@ import java.util.stream.Stream;
 
 public class FileBackedTaskManager extends InMemoryTaskManager {
     private final File file;
-    private static final String DEFAULT_FILE_PATH = "./data/ха-ха-ха.csv";
+    private static final String DEFAULT_FILE_PATH = "./data/manager.csv";
 
     public FileBackedTaskManager() {
         this.file = new File(DEFAULT_FILE_PATH);
@@ -73,7 +73,6 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
         return updatedTask;
     }
 
-
     @Override
     public Epic updateEpic(Epic epic) {
         Integer epicID = epic.getId();
@@ -85,7 +84,6 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
         save();
         return epic;
     }
-
 
     @Override
     public Subtask updateSubtask(Subtask subtask) {
@@ -136,30 +134,18 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
     public void save() {
         try {
             List<String> lines = new ArrayList<>();
+            lines.add("id,type,name,status,description,duration,startTime,epicId");
 
-            lines.add("id,type,name,status,description,duration,startTime,endTime,epicId");
-            lines.addAll(
-                    Stream.of(super.getTasks(), super.getEpics(), super.getSubtasks())
-                            .flatMap(List::stream)
-                            .map(task -> {
-                                String baseLine = task.toCsvString();
-                                // Для Subtask добавляем epicId в конец
-                                if (task instanceof Subtask) {
-                                    return baseLine + "," + ((Subtask) task).getEpicId();
-                                }
-                                // Для Task и Epic добавляем пустое поле epicId
-                                return baseLine + ",";
-                            })
-                            .toList()
-            );
+            Stream.of(super.getTasks(), super.getEpics(), super.getSubtasks())
+                    .flatMap(List::stream)
+                    .map(CsvTaskUtils::taskToCsvString)
+                    .forEach(lines::add);
 
-            // Запись с явным указанием кодировки UTF-8
             Files.writeString(
                     Paths.get(file.getAbsolutePath()),
                     String.join("\n", lines),
                     StandardCharsets.UTF_8
             );
-
         } catch (IOException e) {
             throw new ManagerSaveException("Ошибка при сохранении в файл: " + e.getMessage(), e);
         }
@@ -168,14 +154,17 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
     public static FileBackedTaskManager loadFromFile(String filePath) throws ManagerSaveException {
         File file = new File(filePath);
         try {
-            String content = Files.readString(Paths.get(file.getAbsolutePath()));
+            String content = Files.readString(Paths.get(file.getAbsolutePath()), StandardCharsets.UTF_8);
 
-            // Проверка: файл пуст или содержит только заголовок
-            if (content.trim().isEmpty() || content.trim().split("\n").length <= 1) {
-                throw new ManagerSaveException("Файл пуст или не содержит данных (только заголовок)");
+            if (content.trim().isEmpty()) {
+                throw new ManagerSaveException("Файл пуст");
             }
 
             String[] lines = content.split("\n");
+            if (lines.length <= 1) {
+                throw new ManagerSaveException("Файл не содержит данных (только заголовок)");
+            }
+
             FileBackedTaskManager manager = new FileBackedTaskManager(file);
 
             List<Epic> epicsToAdd = new ArrayList<>();
@@ -183,18 +172,11 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
             List<Task> tasksToAdd = new ArrayList<>();
 
             for (int i = 1; i < lines.length; i++) {
-                String line = lines[i];
+                String line = lines[i].trim();
                 if (line.isEmpty()) continue;
 
-                String[] fields = line.split(",");
-                if (fields.length < 7) {
-                    throw new ManagerSaveException(
-                            "Ошибка при загрузке из файла: недостаточно полей в строке '" + line + "'"
-                    );
-                }
-
                 try {
-                    Task task = Task.fromString(line);
+                    Task task = CsvTaskUtils.taskFromString(line);
                     if (task instanceof Subtask) {
                         subtasksToAdd.add((Subtask) task);
                     } else if (task instanceof Epic) {
@@ -221,3 +203,6 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
         }
     }
 }
+
+
+

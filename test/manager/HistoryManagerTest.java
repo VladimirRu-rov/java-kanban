@@ -1,5 +1,7 @@
-import manage.HistoryManager;
-import manage.InMemoryHistoryManager;
+package manager;
+
+import manager.history.HistoryManager;
+import manager.history.InMemoryHistoryManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import task.Status;
@@ -86,9 +88,7 @@ public class HistoryManagerTest {
         historyManager.add(task1);
         historyManager.add(task2);
         historyManager.add(task3);
-
         historyManager.remove(task2.getId());
-
         List<Task> history = historyManager.getHistory();
 
         assertEquals(2, history.size(), "Размер истории должен быть равен двум элементам");

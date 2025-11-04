@@ -48,6 +48,13 @@ public class Task {
         this.startTime = startTime;
     }
 
+    public Task(int id, String name, String description, Status status) {
+        this.id = id;
+        this.name = name;
+        this.description = description;
+        this.status = status;
+    }
+
     public String getName() {
         return name;
     }
@@ -58,10 +65,6 @@ public class Task {
 
     public String getDescription() {
         return description;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public Duration getDuration() {
@@ -78,7 +81,7 @@ public class Task {
 
     public LocalDateTime getEndTime() {
         if (startTime == null) {
-            return null; // Вернем null, если startTime не задан
+            return null;
         }
         return startTime.plus(duration);
     }
@@ -89,8 +92,7 @@ public class Task {
         return TaskType.TASK;
     }
 
-    public void setDescription(String description) {
-        this.description = description;
+    public void setEndTime(LocalDateTime endTime) {
     }
 
     public void setId(int id) {
@@ -102,46 +104,14 @@ public class Task {
     }
 
     public void setDuration(Duration duration) {
+        if (duration != null && duration.isNegative()) {
+            throw new IllegalArgumentException("Длительность не может быть отрицательной");
+        }
         this.duration = duration;
     }
 
     public void setStartTime(LocalDateTime startTime) {
         this.startTime = startTime;
-    }
-
-    public static Task fromString(String line) {
-        String[] parts = line.split(",");
-        if (parts.length < 7) throw new IllegalArgumentException("Неверный формат CSV");
-
-        try {
-            int id = Integer.parseInt(parts[0]);
-            TaskType type = TaskType.valueOf(parts[1]);
-            String name = parts[2];
-            Status status = Status.valueOf(parts[3]);
-            String description = parts[4];
-            long durationMinutes = Long.parseLong(parts[5]);
-            LocalDateTime startTime = parts[6].isEmpty()
-                    ? null
-                    : LocalDateTime.parse(parts[6], DATE_FORMATTER);
-            Duration duration = Duration.ofMinutes(durationMinutes);
-
-            switch (type) {
-                case TASK:
-                    return new Task(id, name, description, status, duration, startTime);
-                case EPIC:
-                    LocalDateTime endTime = parts.length > 7 && !parts[7].isEmpty()
-                            ? LocalDateTime.parse(parts[7], DATE_FORMATTER)
-                            : null;
-                    return new Epic(id, name, description, status, duration, startTime);
-                case SUBTASK:
-                    int epicId = Integer.parseInt(parts[7]);
-                    return new Subtask(id, name, description, status, duration, startTime, epicId);
-                default:
-                    throw new IllegalArgumentException("Неизвестный тип задачи: " + type);
-            }
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Ошибка парсинга CSV: " + e.getMessage());
-        }
     }
 
     @Override
@@ -153,25 +123,5 @@ public class Task {
                 "Описание='" + getDescription() + "', " +
                 "Длительность=" + getDuration() + ", " +
                 "Начало=" + getStartTime();
-    }
-
-    public String toCsvString() {
-        return getId() + "," +
-                getTaskType() + "," +
-                getName() + "," +
-                getStatus() + "," +
-                getDescription() + "," +
-                (getDuration() != null ? getDuration().toMinutes() : "") + "," +
-                (getStartTime() != null ? getStartTime().format(DATE_FORMATTER) : "");
-    }
-
-    public boolean hasOverlappingTasks(Collection<Task> otherTasks) {
-        return otherTasks.stream()
-                .anyMatch(this::isOverlapping);
-    }
-
-    public boolean isOverlapping(Task other) {
-        return this.getStartTime().isBefore(other.getEndTime()) &&
-                other.getStartTime().isBefore(this.getEndTime());
     }
 }
