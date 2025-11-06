@@ -30,7 +30,7 @@ public class FileBackedTaskManagerTest {
     }
 
     @BeforeEach
-    void setUp() throws IOException {
+    public void setUp() throws IOException {
         Path dir = getTestFilePath().getParent();
         if (!Files.exists(dir)) {
             Files.createDirectories(dir);
@@ -40,7 +40,7 @@ public class FileBackedTaskManagerTest {
     }
 
     @AfterEach
-    void tearDown() throws IOException {
+    public void tearDown() throws IOException {
         Files.deleteIfExists(getTestFilePath());
     }
 

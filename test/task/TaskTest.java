@@ -15,13 +15,13 @@ import static org.junit.jupiter.api.Assertions.*;
 public class TaskTest {
 
     @TempDir
-    Path tempDir;
+    private Path tempDir;
 
     private TaskManager taskManager;
     private Path testFilePath;
 
     @BeforeEach
-    void setUp() throws Exception {
+    protected void setUp() throws Exception {
         testFilePath = tempDir.resolve("test_tasks.csv");
         taskManager = new FileBackedTaskManager(testFilePath.toFile());
     }
