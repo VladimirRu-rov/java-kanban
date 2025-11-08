@@ -1,11 +1,11 @@
-package manage;
+
+package manager.task;
 
 import task.Task;
 import task.Epic;
 import task.Subtask;
 
 import java.util.List;
-
 
 public interface TaskManager {
     int getNextId();
@@ -49,5 +49,6 @@ public interface TaskManager {
     Subtask deleteSubtaskByID(int id);
 
     List<Task> getHistory();
-}
 
+    boolean isOverlapping(Task task1, Task task2);
+}

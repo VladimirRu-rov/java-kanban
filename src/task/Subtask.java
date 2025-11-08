@@ -1,22 +1,19 @@
 package task;
 
-public class Subtask extends Task {
+import java.time.Duration;
+import java.time.LocalDateTime;
 
+public class Subtask extends Task {
     private final int epicId;
 
-    // Конструктор, принимающий имя, описание и идентификатор task.Epic
-    public Subtask(String name, String description, int epicId) {
-        super(name, description);
-        this.epicId = epicId;
-    }
-
-    // Конструктор, принимающий имя, описание, статус, идентификатор и идентификатор task.Epic
-    public Subtask(int id, String name, String description, Status status, int epicId) {
+    public Subtask(int id, String name, String description, Status status,
+                   Duration duration, LocalDateTime startTime, int epicId) {
         super(id, name, description, status);
         this.epicId = epicId;
+        setDuration(duration);
+        setStartTime(startTime);
     }
 
-    // Метод для получения идентификатора task.Epic
     public int getEpicId() {
         return epicId;
     }
@@ -28,13 +25,9 @@ public class Subtask extends Task {
                 ". Описание: " + getDescription() +
                 ". id = " + getId() +
                 ". epicID = " + epicId +
+                ". Длительность: " + getDuration() +
+                ". Начало: " + getStartTime() +
                 ". Статус: " + getStatus() +
                 '.';
-    }
-
-    // Метод для вывода текста в файл
-    @Override
-    public String toCsvString() {
-        return getId() + "," + getTaskType() + "," + getName() + "," + getStatus() + "," + getDescription() + "," + epicId + ",";
     }
 }

@@ -1,11 +1,8 @@
-package manage;
+package manager.history;
 
 import task.Task;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Map;
+import java.util.*;
 
 public class InMemoryHistoryManager implements HistoryManager {
 
@@ -15,12 +12,11 @@ public class InMemoryHistoryManager implements HistoryManager {
 
     @Override
     public void add(Task task) {
-        // Если задача уже была просмотрена, удаляем её прежнюю позицию
         Node existingNode = nodeMap.get(task.getId());
-        removeNode(existingNode); // удаляем старую позицию
+        removeNode(existingNode);
         Node newNode = new Node(task);
         linkLast(newNode);
-        nodeMap.put(task.getId(), newNode); // Обновляем карту
+        nodeMap.put(task.getId(), newNode);
     }
 
     private List<Task> getTasks(Node node) {
@@ -41,12 +37,18 @@ public class InMemoryHistoryManager implements HistoryManager {
     public void remove(int id) {
         Node nodeToRemove = nodeMap.get(id);
         if (nodeToRemove != null) {
-            removeNode(nodeToRemove); // удаляем узел
-            nodeMap.remove(id); // удаляем из карты
+            removeNode(nodeToRemove);
+            nodeMap.remove(id);
         }
     }
 
-    // Приватный метод для добавления узла в конец списка
+    @Override
+    public void removeAll() {
+        head = null;
+        tail = null;
+        nodeMap.clear();
+    }
+
     private void linkLast(Node newNode) {
         if (tail == null) {
             head = tail = newNode;
@@ -57,11 +59,8 @@ public class InMemoryHistoryManager implements HistoryManager {
         }
     }
 
-    // Приватный метод для удаления узла из списка
     private void removeNode(Node node) {
-        if (node == null) {
-            return;
-        }
+        if (node == null) return;
 
         if (node.prev != null) {
             node.prev.next = node.next;

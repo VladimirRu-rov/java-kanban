@@ -1,4 +1,4 @@
-package manage;
+package manager.history;
 
 import task.Task;
 
@@ -10,4 +10,6 @@ public interface HistoryManager {
     void remove(int id);
 
     List<Task> getHistory();
+
+    void removeAll();
 }
