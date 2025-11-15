@@ -36,7 +36,6 @@ public class InMemoryTaskManager implements TaskManager {
                 throw new TaskOverlapException("Задача пересекается по времени с другой задачей");
             }
         } 
-
         task.setId(getNextId());
         tasks.put(task.getId(), task);
         prioritizedTasks.add(task);
