@@ -35,8 +35,6 @@ public class InMemoryTaskManager implements TaskManager {
             if (!tasks.isEmpty() && hasOverlappingTasks(task, tasks.values())) {
                 throw new TaskOverlapException("Задача пересекается по времени с другой задачей");
             }
-        } else {
-
         }
 
         task.setId(getNextId());
