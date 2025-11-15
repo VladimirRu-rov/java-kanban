@@ -17,9 +17,13 @@ public class Epic extends Task {
     }
 
     public void addSubTask(Subtask subtask) {
+        if (subTaskList == null) {
+            subTaskList = new ArrayList<>();
+        }
         subTaskList.add(subtask);
         recalculateEpicTimes();
     }
+
 
     public void clearSubtasks() {
         subTaskList.clear();
@@ -27,7 +31,7 @@ public class Epic extends Task {
     }
 
     public void setSubtaskList(ArrayList<Subtask> subtaskList) {
-        this.subTaskList = subtaskList;
+        this.subTaskList = (subtaskList != null) ? subtaskList : new ArrayList<>();
         recalculateEpicTimes();
     }
 
@@ -77,7 +81,7 @@ public class Epic extends Task {
 
         return subTaskList.stream()
                 .map(Subtask::getEndTime)
-                .filter(Objects::nonNull) // 👈 добавляем фильтрацию, чтобы отбрасывать null-значения
+                .filter(Objects::nonNull)
                 .max(LocalDateTime::compareTo)
                 .orElse(null);
     }
@@ -89,6 +93,9 @@ public class Epic extends Task {
     }
 
     public ArrayList<Subtask> getSubTaskList() {
+        if (subTaskList == null) {
+            subTaskList = new ArrayList<>();
+        }
         return subTaskList;
     }
 

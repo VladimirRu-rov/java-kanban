@@ -2,30 +2,24 @@ package manager.history;
 
 import task.Task;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class InMemoryHistoryManager implements HistoryManager {
 
-    private Node head; // Начало списка
-    private Node tail; // Конец списка
     private final Map<Integer, Node> nodeMap = new HashMap<>();
+    private Node head;
+    private Node tail;
 
     @Override
     public void add(Task task) {
         Node existingNode = nodeMap.get(task.getId());
         removeNode(existingNode);
         Node newNode = new Node(task);
-        linkLast(newNode);
+        linkFirst(newNode);
         nodeMap.put(task.getId(), newNode);
-    }
-
-    private List<Task> getTasks(Node node) {
-        List<Task> tasks = new ArrayList<>();
-        while (node != null) {
-            tasks.add(node.task);
-            node = node.next;
-        }
-        return tasks;
     }
 
     @Override
@@ -49,13 +43,22 @@ public class InMemoryHistoryManager implements HistoryManager {
         nodeMap.clear();
     }
 
-    private void linkLast(Node newNode) {
-        if (tail == null) {
+    private List<Task> getTasks(Node node) {
+        List<Task> tasks = new ArrayList<>();
+        while (node != null) {
+            tasks.add(node.task);
+            node = node.next;
+        }
+        return tasks;
+    }
+
+    private void linkFirst(Node newNode) {
+        if (head == null) {
             head = tail = newNode;
         } else {
-            tail.next = newNode;
-            newNode.prev = tail;
-            tail = newNode;
+            newNode.next = head;
+            head.prev = newNode;
+            head = newNode;
         }
     }
 
@@ -72,6 +75,16 @@ public class InMemoryHistoryManager implements HistoryManager {
             node.next.prev = node.prev;
         } else {
             tail = node.prev;
+        }
+    }
+
+    private static class Node {
+        Task task;
+        Node prev;
+        Node next;
+
+        Node(Task task) {
+            this.task = task;
         }
     }
 }

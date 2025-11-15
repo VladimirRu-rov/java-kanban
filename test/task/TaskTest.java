@@ -121,12 +121,10 @@ public class TaskTest {
         epic.addSubTask(new Subtask(10, "Подзадача 1", "", Status.NEW, Duration.ZERO, null, epic.getId()));
         epic.addSubTask(new Subtask(11, "Подзадача 2", "", Status.NEW, Duration.ZERO, null, epic.getId()));
 
-
         taskManager.addEpic(epic);
         taskManager.updateEpic(epic);
 
-        assertEquals(Status.NEW, epic.getStatus(),
-                "Если все подзадачи NEW — статус эпика NEW");
+        assertEquals(Status.NEW, epic.getStatus(), "Если все подзадачи NEW — статус эпика NEW");
     }
 
     @Test
@@ -161,7 +159,6 @@ public class TaskTest {
         epic.addSubTask(new Subtask(10, "Подзадача 1", "", Status.IN_PROGRESS, Duration.ZERO, null, epic.getId()));
         epic.addSubTask(new Subtask(11, "Подзадача 2", "", Status.NEW, Duration.ZERO, null, epic.getId()));
 
-
         taskManager.addEpic(epic);
         taskManager.updateEpic(epic);
 
@@ -169,4 +166,3 @@ public class TaskTest {
                 "Если есть IN_PROGRESS — статус эпика IN_PROGRESS");
     }
 }
-

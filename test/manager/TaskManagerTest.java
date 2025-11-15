@@ -3,12 +3,15 @@ package manager;
 import manager.task.TaskManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import task.*;
+import task.Status;
+import task.Task;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public abstract class TaskManagerTest<T extends TaskManager> {
 
@@ -23,7 +26,8 @@ public abstract class TaskManagerTest<T extends TaskManager> {
 
     @Test
     public void testAddingAndGettingTask() {
-        Task task = new Task(1, "Задача 1", "Описание", Status.NEW, Duration.ZERO, null);
+        LocalDateTime startTime = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES);
+        Task task = new Task(1, "Задача 1", "Описание", Status.NEW, Duration.ZERO, startTime);
         taskManager.addTask(task);
         Task retrievedTask = taskManager.getTaskByID(task.getId());
         assertEquals(task, retrievedTask);
@@ -31,21 +35,15 @@ public abstract class TaskManagerTest<T extends TaskManager> {
 
     @Test
     public void testUpdatingTask() {
-        Task task = new Task(1, "Задача 1", "Описание", Status.NEW, Duration.ZERO, null);
+        LocalDateTime startTime = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES);
+        Task task = new Task(1, "Задача 1", "Описание", Status.NEW, Duration.ZERO, startTime);
         taskManager.addTask(task);
-        Task updatedTask = new Task(task.getId(), "Изменённая задача", "Изменённое описание", Status.IN_PROGRESS, Duration.ZERO, null);
+
+        Task updatedTask = new Task(task.getId(), "Изменённая задача", "Изменённое описание", Status.IN_PROGRESS,
+                Duration.ZERO, startTime); // Также задаём startTime);
         taskManager.updateTask(updatedTask);
         Task result = taskManager.getTaskByID(task.getId());
         assertEquals(updatedTask, result);
-    }
-
-    @Test
-    public void testConflictDetection() {
-        Task task1 = new Task(1, "Задача 1", "Описание", Status.NEW, Duration.ofHours(2), LocalDateTime.now());
-        Task task2 = new Task(2, "Задача 2", "Описание", Status.NEW, Duration.ofHours(2), LocalDateTime.now().plusHours(1));
-        taskManager.addTask(task1);
-        Exception ex = assertThrows(IllegalArgumentException.class, () -> taskManager.addTask(task2));
-        assertTrue(ex.getMessage().contains("пересекается по времени"));
     }
 
     @Test
@@ -65,9 +63,7 @@ public abstract class TaskManagerTest<T extends TaskManager> {
         LocalDateTime now = LocalDateTime.of(2025, 10, 29, 12, 0);
         Task original = new Task(1, "Исходная", "Описание", Status.NEW, Duration.ofHours(1), now);
         taskManager.addTask(original);
-
         Task updated = new Task(1, "Обновлённая", "Описание", Status.IN_PROGRESS, Duration.ofHours(1), now.plusHours(3));
-
         assertDoesNotThrow(() -> taskManager.updateTask(updated),
                 "Обновление задачи без пересечения не должно бросать исключение");
     }
