@@ -3,7 +3,6 @@ package api.handlers;
 import api.BaseHttpHandler;
 import com.google.gson.JsonSyntaxException;
 import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
 import exceptions.NotFoundException;
 import exceptions.TaskOverlapException;
 import manager.task.TaskManager;
@@ -14,29 +13,22 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
-public class TaskHandler extends BaseHttpHandler implements HttpHandler {
-    private final TaskManager taskManager;
+public class TaskHandler extends BaseHttpHandler {
 
     public TaskHandler(TaskManager taskManager) {
-        this.taskManager = taskManager;
+        super(taskManager);
     }
 
     @Override
-    public void handle(HttpExchange exchange) throws IOException {
-        try {
-            String method = exchange.getRequestMethod();
-            String path = exchange.getRequestURI().getPath();
+    protected void processRequest(HttpExchange exchange) throws IOException {
+        String method = exchange.getRequestMethod();
+        String path = exchange.getRequestURI().getPath();
 
-            switch (method) {
-                case "GET" -> handleGet(exchange, path);
-                case "POST" -> handlePost(exchange, path);
-                case "DELETE" -> handleDelete(exchange, path);
-                default -> sendMethodNotAllowed(exchange);
-            }
-        } catch (Exception e) {
-            sendInternalError(exchange, "Внутренняя ошибка сервера: " + e.getMessage());
-        } finally {
-            exchange.close();
+        switch (method) {
+            case "GET" -> handleGet(exchange, path);
+            case "POST" -> handlePost(exchange, path);
+            case "DELETE" -> handleDelete(exchange, path);
+            default -> sendMethodNotAllowed(exchange);
         }
     }
 
@@ -59,23 +51,16 @@ public class TaskHandler extends BaseHttpHandler implements HttpHandler {
         }
     }
 
-    protected void handlePost(HttpExchange exchange, String path) throws IOException {
-        try {
-            if (path.equals("/tasks")) {
-                String requestBody = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
-                if (requestBody.isEmpty()) {
-                    sendBadRequest(exchange, "Пустое тело запроса");
-                    return;
-                }
+    private void handlePost(HttpExchange exchange, String path) throws IOException {
+        if (path.equals("/tasks")) {
+            String requestBody = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+            if (requestBody.isEmpty()) {
+                sendBadRequest(exchange, "Пустое тело запроса");
+                return;
+            }
 
-                Task task;
-                try {
-                    task = this.gson.fromJson(requestBody, Task.class);
-                } catch (JsonSyntaxException e) {
-                    sendBadRequest(exchange, "Ошибка синтаксиса JSON: " + e.getMessage());
-                    return;
-                }
-
+            try {
+                Task task = gson.fromJson(requestBody, Task.class);
                 if (task == null) {
                     sendBadRequest(exchange, "Некорректный JSON");
                     return;
@@ -95,38 +80,35 @@ public class TaskHandler extends BaseHttpHandler implements HttpHandler {
                 } catch (TaskOverlapException e) {
                     sendHasInteractions(exchange, e.getMessage());
                 }
-            } else if (path.startsWith("/tasks/")) {
-                try {
-                    int id = Integer.parseInt(path.substring(7));
-                    String requestBody = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
-                    if (requestBody.isEmpty()) {
-                        sendBadRequest(exchange, "Пустое тело запроса");
-                        return;
-                    }
-
-                    Task task = this.gson.fromJson(requestBody, Task.class);
-
-                    if (task.getId() != id) {
-                        sendBadRequest(exchange, "ID в URL и в теле запроса не совпадают");
-                        return;
-                    }
-
-                    Task updatedTask = taskManager.updateTask(task);
-                    if (updatedTask != null) {
-                        sendJson(exchange, task, 200);
-                    } else {
-                        sendNotFound(exchange);
-                    }
-                } catch (NumberFormatException e) {
-                    sendBadRequest(exchange, "Неверный ID в URL");
-                } catch (JsonSyntaxException e) {
-                    sendBadRequest(exchange, "Ошибка JSON: " + e.getMessage());
-                }
-            } else {
-                sendBadRequest(exchange, "Неверный URL для POST");
+            } catch (JsonSyntaxException e) {
+                sendBadRequest(exchange, "Ошибка синтаксиса JSON: " + e.getMessage());
             }
-        } catch (Exception e) {
-            sendInternalError(exchange, "Ошибка обработки POST: " + e.getMessage());
+        } else if (path.startsWith("/tasks/")) {
+            try {
+                int id = Integer.parseInt(path.substring(7));
+                String requestBody = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+                if (requestBody.isEmpty()) {
+                    sendBadRequest(exchange, "Пустое тело запроса");
+                    return;
+                }
+
+                Task task = gson.fromJson(requestBody, Task.class);
+
+                task.setId(id);
+
+                Task updatedTask = taskManager.updateTask(task);
+                if (updatedTask != null) {
+                    sendJson(exchange, task, 200);
+                } else {
+                    sendNotFound(exchange);
+                }
+            } catch (NumberFormatException e) {
+                sendBadRequest(exchange, "Неверный ID в URL");
+            } catch (JsonSyntaxException e) {
+                sendBadRequest(exchange, "Ошибка JSON: " + e.getMessage());
+            }
+        } else {
+            sendBadRequest(exchange, "Неверный URL для POST. Используйте /tasks или /tasks/{id}");
         }
     }
 

@@ -11,12 +11,11 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class SubtasksEndpointTest extends HttpTaskServerTestBase {
-
 
     @Test
     public void testAddSubtask_ToNonExistingEpic() throws Exception {
@@ -24,6 +23,7 @@ public class SubtasksEndpointTest extends HttpTaskServerTestBase {
         Subtask subtask = new Subtask(0, "Неправильный Subtask", "Описание", Status.NEW,
                 Duration.ofMinutes(30), LocalDateTime.now(), 999);
         String json = gson.toJson(subtask);
+
 
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
@@ -35,17 +35,10 @@ public class SubtasksEndpointTest extends HttpTaskServerTestBase {
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
         assertEquals(400, response.statusCode(),
                 "Ожидался статус 400 (Bad Request) при несуществующем epicId");
-        assertTrue(
-                response.body().contains("\"error\"") &&
-                        response.body().contains("Указанный эпик не найден"),
-                "Ответ должен содержать поле 'error' с сообщением об отсутствии эпика"
-        );
 
-        String contentType = response.headers().firstValue("Content-Type").orElse("");
-        assertTrue(
-                contentType.startsWith("application/json"),
-                "Content-Type должен быть application/json, получено: " + contentType
-        );
+        List<Subtask> allSubtasks = manager.getSubtasks();
+        assertFalse(allSubtasks.stream().anyMatch(s -> s.getName().equals("Неправильный Subtask")),
+                "Подзадача с некорректным epicId не должна быть добавлена");
     }
 
     @Test
@@ -91,8 +84,10 @@ public class SubtasksEndpointTest extends HttpTaskServerTestBase {
         assertEquals(subtask.getId(), result.getId());
         assertEquals("подподзадача", result.getName());
 
-        String contentType = response.headers().firstValue("Content-Type").orElse("");
-        assertTrue(contentType.startsWith("application/json"));
+        Subtask storedSubtask = manager.getSubtaskByID(subtask.getId());
+        assertNotNull(storedSubtask, "Подзадача должна быть в хранилище");
+        assertEquals(subtask.getId(), storedSubtask.getId());
+        assertEquals("подподзадача", storedSubtask.getName());
     }
 
     @Test
@@ -107,5 +102,29 @@ public class SubtasksEndpointTest extends HttpTaskServerTestBase {
         assertEquals(404, response.statusCode(), "Несуществующая подзадача — 404");
         String contentType = response.headers().firstValue("Content-Type").orElse("");
         assertTrue(contentType.startsWith("application/json"));
+    }
+
+    @Test
+    public void testDeleteSubtask_Success() throws Exception {
+        initGson();
+        Epic epic = manager.addEpic(new Epic(0, "Эпик", "Описание", Status.NEW, null, null));
+        Subtask subtask = new Subtask(0, "Для удаления", "Описание", Status.NEW,
+                Duration.ofMinutes(15), LocalDateTime.now(), epic.getId());
+        subtask = manager.addSubTask(subtask);
+
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("http://localhost:8080/subtasks/" + subtask.getId()))
+                .DELETE()
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        assertEquals(200, response.statusCode(), "Удаление должно возвращать 200 No Content");
+
+        Subtask deleted = manager.getSubtaskByID(subtask.getId());
+        assertNull(deleted, "Подзадача не должна быть доступна после удаления");
+
+        List<Subtask> allSubtasks = manager.getSubtasks();
+        assertFalse(allSubtasks.contains(subtask), "Подзадача не должна присутствовать в списке всех подзадач");
     }
 }

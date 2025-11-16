@@ -42,5 +42,18 @@ public class PrioritizedTasksEndpointTest extends HttpTaskServerTestBase {
 
         String contentType = response.headers().firstValue("Content-Type").orElse("");
         assertTrue(contentType.startsWith("application/json"));
+
+        List<Task> managerPrioritized = manager.getPrioritizedTasks();
+        assertEquals(prioritized.size(), managerPrioritized.size(),
+                "Количество задач в ответе и в менеджере должно совпадать");
+
+        for (int i = 0; i < prioritized.size(); i++) {
+            Task responseTask = prioritized.get(i);
+            Task managerTask = managerPrioritized.get(i);
+            assertEquals(responseTask.getId(), managerTask.getId(),
+                    "ID задачи в ответе должен совпадать с ID в менеджере на позиции " + i);
+            assertEquals(responseTask.getName(), managerTask.getName(),
+                    "Имя задачи в ответе должно совпадать с именем в менеджере на позиции " + i);
+        }
     }
 }

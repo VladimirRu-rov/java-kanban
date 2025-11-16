@@ -43,7 +43,6 @@ public class InMemoryTaskManager implements TaskManager {
         return task;
     }
 
-
     @Override
     public Epic addEpic(Epic epic) {
         if (epic.getId() <= 0) {
@@ -60,7 +59,7 @@ public class InMemoryTaskManager implements TaskManager {
     @Override
     public Subtask addSubTask(Subtask subtask) {
         if (!epics.containsKey(subtask.getEpicId())) {
-            throw new IllegalArgumentException("Указанный эпик не найден.");
+            throw new IllegalArgumentException("Указанный эпик не найден");  // ← Точно так!
         }
         subtask.setId(getNextId());
         Epic epic = epics.get(subtask.getEpicId());
@@ -104,7 +103,6 @@ public class InMemoryTaskManager implements TaskManager {
         epics.replace(epicID, existingEpic);
         return existingEpic;
     }
-
 
     @Override
     public Subtask updateSubtask(Subtask subtask) {
@@ -248,7 +246,6 @@ public class InMemoryTaskManager implements TaskManager {
         historyManager.add(task);
         return task;
     }
-
 
     @Override
     public Epic getEpicByID(int id) {

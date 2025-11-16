@@ -24,7 +24,6 @@ public class Epic extends Task {
         recalculateEpicTimes();
     }
 
-
     public void clearSubtasks() {
         subTaskList.clear();
         recalculateEpicTimes();

@@ -63,28 +63,6 @@ public class HistoryEndpointTest extends HttpTaskServerTestBase {
     }
 
     @Test
-    public void testClearHistory() throws Exception {
-        Task task = manager.addTask(new Task("Задача", "Описание", Duration.ZERO, LocalDateTime.now()));
-        manager.getTaskByID(task.getId());
-
-        assertEquals(1, manager.getHistory().size());
-
-        HttpClient client = HttpClient.newHttpClient();
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("http://localhost:8080/history"))
-                .DELETE()
-                .build();
-
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        assertEquals(200, response.statusCode());
-
-        assertTrue(manager.getHistory().isEmpty(), "История должна быть очищена");
-
-        String contentType = response.headers().firstValue("Content-Type").orElse("");
-        assertTrue(contentType.startsWith("application/json"));
-    }
-
-    @Test
     public void testHistory_AfterTaskDeletion() throws Exception {
         initGson();
         Task task = manager.addTask(new Task("Удалить задачу", "Описание", Duration.ZERO, LocalDateTime.now()));

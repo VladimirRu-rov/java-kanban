@@ -1,6 +1,9 @@
 package http;
 
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
+import com.google.gson.JsonParser;
+import exceptions.NotFoundException;
 import org.junit.jupiter.api.Test;
 import task.Status;
 import task.Task;
@@ -11,9 +14,9 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TasksEndpointTest extends HttpTaskServerTestBase {
 
@@ -35,6 +38,12 @@ public class TasksEndpointTest extends HttpTaskServerTestBase {
         try {
             Task savedTask = gson.fromJson(response.body(), Task.class);
             assertEquals("Задача", savedTask.getName(), "Имя задачи должно совпадать");
+
+            Task retrievedTask = manager.getTaskByID(savedTask.getId());
+            assertEquals(savedTask.getId(), retrievedTask.getId());
+            assertEquals(savedTask.getName(), retrievedTask.getName());
+            assertEquals(savedTask.getDescription(), retrievedTask.getDescription());
+
             assertEquals(1, manager.getTasks().size(), "В хранилище должна быть 1 задача");
         } catch (JsonParseException e) {
             e.printStackTrace();
@@ -44,6 +53,7 @@ public class TasksEndpointTest extends HttpTaskServerTestBase {
             throw e;
         }
     }
+
 
     @Test
     public void testAddTask_InvalidDuration_Negative() throws Exception {
@@ -156,11 +166,10 @@ public class TasksEndpointTest extends HttpTaskServerTestBase {
     public void testUpdateTask_Success() throws Exception {
         initGson();
 
-        LocalDateTime start = LocalDateTime.of(2025, 11, 15, 8, 0); // 15.11.2025 08:00
+        LocalDateTime start = LocalDateTime.of(2025, 11, 15, 8, 0);
         Task task = manager.addTask(new Task("старая задача", "Описание", Duration.ofMinutes(10), start));
 
-        // Новое время — гарантированно вне пересечения (например, следующий день)
-        LocalDateTime newStartTime = LocalDateTime.of(2025, 11, 16, 9, 0); // 16.11.2025 09:00
+        LocalDateTime newStartTime = LocalDateTime.of(2025, 11, 16, 9, 0);
         Task updatedTask = new Task(task.getId(), "Обновленное имя", "Новое описание", Status.IN_PROGRESS,
                 Duration.ofMinutes(20), newStartTime);
 
@@ -180,7 +189,14 @@ public class TasksEndpointTest extends HttpTaskServerTestBase {
         assertEquals("Обновленное имя", result.getName());
         assertEquals(Status.IN_PROGRESS, result.getStatus());
         assertEquals(newStartTime, result.getStartTime());
+
+        Task retrievedTask = manager.getTaskByID(result.getId());
+        assertEquals(result.getId(), retrievedTask.getId());
+        assertEquals(result.getName(), retrievedTask.getName());
+        assertEquals(result.getStatus(), retrievedTask.getStatus());
+        assertEquals(result.getStartTime(), retrievedTask.getStartTime());
     }
+
 
     @Test
     public void testUpdateTask_NotFound() throws Exception {
@@ -198,5 +214,45 @@ public class TasksEndpointTest extends HttpTaskServerTestBase {
 
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
         assertEquals(404, response.statusCode());
+    }
+
+    @Test
+    public void testDeleteTask_Success() throws Exception {
+        initGson();
+
+        manager.deleteTasks();
+        assertEquals(0, manager.getTasks().size(), "Менеджер должен быть пуст перед тестом");
+
+        String taskName = "Для удаления_" + System.currentTimeMillis();
+        Task task = new Task(taskName, "Описание задачи", Duration.ofMinutes(45), LocalDateTime.now());
+        task = manager.addTask(task);
+        int taskId = task.getId();
+        assertNotNull(taskId, "Задача должна получить ID после добавления через менеджер");
+
+        Task storedTask = manager.getTaskByID(taskId);
+        assertEquals(task.getId(), storedTask.getId(), "Задача должна быть в менеджере до удаления");
+
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("http://localhost:8080/tasks/" + taskId))
+                .DELETE()
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        assertEquals(200, response.statusCode(), "Удаление должно возвращать 200 OK");
+        JsonObject responseJson = JsonParser.parseString(response.body()).getAsJsonObject();
+        assertTrue(responseJson.has("status"), "Ответ должен содержать ключ 'status'");
+        assertEquals("deleted", responseJson.get("status").getAsString(),
+                "Значение ключа 'status' должно быть 'deleted'");
+
+        assertThrows(NotFoundException.class, () -> {
+            manager.getTaskByID(taskId);
+        }, "После удаления getTaskByID() должен бросать NotFoundException");
+
+        List<Task> allTasks = manager.getTasks();
+        assertFalse(allTasks.contains(task),
+                "Задача не должна присутствовать в списке всех задач после удаления");
+
+        assertEquals(0, manager.getTasks().size(), "После удаления менеджер должен быть пуст");
     }
 }

@@ -23,7 +23,6 @@ public class HttpTaskServer {
         this.historyManager = taskManager.getHistoryManager();
         this.server = HttpServer.create(new InetSocketAddress(PORT), 0);
 
-
         server.setExecutor(new ThreadPoolExecutor(
                 1,
                 10,

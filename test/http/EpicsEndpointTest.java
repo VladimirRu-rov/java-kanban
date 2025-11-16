@@ -93,7 +93,7 @@ public class EpicsEndpointTest extends HttpTaskServerTestBase {
 
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("http://localhost:8080/epics"))
+                .uri(URI.create("http://localhost:8080/epics/" + epic.getId()))  // ← Добавляем ID!
                 .POST(HttpRequest.BodyPublishers.ofString(json))
                 .header("Content-Type", "application/json")
                 .build();
