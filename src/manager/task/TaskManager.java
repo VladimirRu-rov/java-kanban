@@ -1,9 +1,9 @@
-
 package manager.task;
 
-import task.Task;
+import manager.history.HistoryManager;
 import task.Epic;
 import task.Subtask;
+import task.Task;
 
 import java.util.List;
 
@@ -51,4 +51,8 @@ public interface TaskManager {
     List<Task> getHistory();
 
     boolean isOverlapping(Task task1, Task task2);
+
+    List<Task> getPrioritizedTasks();
+
+    HistoryManager getHistoryManager();
 }

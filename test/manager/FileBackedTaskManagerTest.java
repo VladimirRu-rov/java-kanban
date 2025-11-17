@@ -1,11 +1,16 @@
 package manager;
 
 import exceptions.ManagerSaveException;
+import exceptions.NotFoundException;
+import exceptions.TaskOverlapException;
 import manager.task.FileBackedTaskManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import task.*;
+import task.Epic;
+import task.Status;
+import task.Subtask;
+import task.Task;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,6 +28,9 @@ import static org.junit.jupiter.api.Assertions.*;
 public class FileBackedTaskManagerTest {
 
     private static final String TEST_FILE_PATH = "./test_tasks.csv";
+    ManagerSaveException ex = assertThrows(ManagerSaveException.class, () -> FileBackedTaskManager.loadFromFile(TEST_FILE_PATH),
+            "Ожидалось исключение ManagerSaveException при некорректных данных"
+    );
     private FileBackedTaskManager taskManager;
 
     private Path getTestFilePath() {
@@ -60,7 +68,11 @@ public class FileBackedTaskManagerTest {
 
     @Test
     public void testDataPersistence() throws IOException {
-        Task task = new Task(1, "Задача 1", "Описание", Status.NEW, null, null);
+        Duration duration = Duration.ofMinutes(30);
+        LocalDateTime startTime = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES);
+
+        Task task = new Task(1, "Задача 1", "Описание", Status.NEW, duration, startTime);
+
         taskManager.addTask(task);
         taskManager.save();
 
@@ -82,10 +94,6 @@ public class FileBackedTaskManagerTest {
             fail("Ошибка при создании тестового файла: " + e.getMessage());
         }
     }
-
-    ManagerSaveException ex = assertThrows(ManagerSaveException.class, () -> FileBackedTaskManager.loadFromFile(TEST_FILE_PATH),
-            "Ожидалось исключение ManagerSaveException при некорректных данных"
-    );
 
     @Test
     public void testLoadFromEmptyFile() {
@@ -136,7 +144,11 @@ public class FileBackedTaskManagerTest {
 
     @Test
     public void testAddingAndGettingTask() {
-        Task task = new Task(1, "Задача 1", "Описание", Status.NEW, Duration.ZERO, null);
+        Duration duration = Duration.ofMinutes(30);
+        LocalDateTime startTime = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES);
+
+        Task task = new Task(1, "Задача 1", "Описание", Status.NEW, duration, startTime);
+
         taskManager.addTask(task);
         Task retrievedTask = taskManager.getTaskByID(task.getId());
         assertEquals(task, retrievedTask);
@@ -144,11 +156,19 @@ public class FileBackedTaskManagerTest {
 
     @Test
     public void testUpdatingTask() {
-        Task task = new Task(1, "Задача 1", "Описание", Status.NEW, Duration.ZERO, null);
+        LocalDateTime startTime = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES);
+
+        Task task = new Task(1, "Задача 1", "Описание", Status.NEW, Duration.ZERO, startTime);
         taskManager.addTask(task);
-        Task updatedTask = new Task(task.getId(), "Изменённая задача", "Изменённое описание", Status.IN_PROGRESS, Duration.ZERO, null);
+
+        LocalDateTime updatedStartTime = startTime.plusHours(1);
+
+        Task updatedTask = new Task(task.getId(), "Изменённая задача", "Изменённое описание",
+                Status.IN_PROGRESS, Duration.ofHours(2), updatedStartTime);
+
         taskManager.updateTask(updatedTask);
         Task result = taskManager.getTaskByID(task.getId());
+
         assertEquals(updatedTask, result);
     }
 
@@ -157,7 +177,8 @@ public class FileBackedTaskManagerTest {
         Task task1 = new Task(1, "Задача 1", "Описание", Status.NEW, Duration.ofHours(2), LocalDateTime.now());
         Task task2 = new Task(2, "Задача 2", "Описание", Status.NEW, Duration.ofHours(2), LocalDateTime.now().plusHours(1));
         taskManager.addTask(task1);
-        Exception ex = assertThrows(IllegalArgumentException.class, () -> taskManager.addTask(task2));
+
+        Exception ex = assertThrows(TaskOverlapException.class, () -> taskManager.addTask(task2));
         assertTrue(ex.getMessage().contains("пересекается по времени"));
     }
 
@@ -186,12 +207,18 @@ public class FileBackedTaskManagerTest {
 
     @Test
     public void testCsv_NullFields() throws IOException {
-        Task task = new Task(1, "Задача", null, Status.NEW, null, null);
+        LocalDateTime startTime = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES);
+
+        Task task = new Task(1, "Задача", null, Status.NEW, null, startTime);
+
         taskManager.addTask(task);
         taskManager.save();
 
         String content = Files.readString(Paths.get(TEST_FILE_PATH));
-        assertTrue(content.contains("1,TASK,Задача,NEW,,0,,"), "Задача должна быть записана с корректными значениями полей");
+
+        assertTrue(content.contains("1,TASK,Задача,NEW,,0,"),
+                "CSV должен содержать '0' для null-значения duration. " +
+                        "Фактическое содержимое: " + content);
     }
 
     @Test
@@ -236,12 +263,21 @@ public class FileBackedTaskManagerTest {
 
     @Test
     public void testGetTaskByID_AfterReload_Nonexistent() {
+
         Task dummyTask = new Task(1, "Временная задача", "Описание", Status.NEW, Duration.ofHours(1),
-                LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS));
+                LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS)
+        );
+
         taskManager.addTask(dummyTask);
         taskManager.save();
+
         FileBackedTaskManager reloaded = FileBackedTaskManager.loadFromFile(TEST_FILE_PATH);
-        assertNull(reloaded.getTaskByID(999), "Задача с несуществующим ID должна возвращать null");
+        assertNotNull(reloaded, "Менеджер должен успешно загрузиться из файла");
+        assertThrows(
+                NotFoundException.class,
+                () -> reloaded.getTaskByID(999),
+                "Задача с несуществующим ID должна вызывать NotFoundException"
+        );
     }
 
     @Test
@@ -266,23 +302,28 @@ public class FileBackedTaskManagerTest {
     }
 
     @Test
-    public void testDeleteTask_AfterReload() {
-        Task task = new Task(1, "Задача", "Описание", Status.NEW, Duration.ofHours(1),
-                LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS));
+    public void testDeleteTask_AfterReload() throws IOException {
+
+        LocalDateTime now = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
+        Task task = new Task(1, "Задача", "Описание", Status.NEW, Duration.ofHours(1), now);
 
         taskManager.addTask(task);
         taskManager.save();
-        FileBackedTaskManager reloaded = FileBackedTaskManager.loadFromFile(TEST_FILE_PATH);
-        Task deleted = reloaded.deleteTaskByID(task.getId());
 
+        FileBackedTaskManager reloaded = FileBackedTaskManager.loadFromFile(TEST_FILE_PATH);
+        assertNotNull(reloaded, "Менеджер должен успешно загрузиться из файла");
+
+        Task deleted = reloaded.deleteTaskByID(task.getId());
         assertNotNull(deleted, "Удаленная задача не должна быть null");
+
         assertEquals(task.getId(), deleted.getId(), "ID задачи должен совпадать");
         assertEquals(task.getName(), deleted.getName(), "Название задачи должно совпадать");
-        assertEquals(task.getDescription(), deleted.getDescription(), "Описание задачи должно совпадать");
-        assertEquals(task.getStatus(), deleted.getStatus(), "Статус задачи должен совпадать");
-        assertEquals(task.getDuration(), deleted.getDuration(), "Длительность задачи должна совпадать");
-        assertEquals(task.getStartTime(), deleted.getStartTime(), "Время начала задачи должно совпадать");
-        assertNull(reloaded.getTaskByID(task.getId()), "Задача не должна находиться в хранилище после удаления");
+        assertEquals(task.getDescription(), deleted.getDescription(), "Описание должно совпадать");
+        assertEquals(task.getStatus(), deleted.getStatus(), "Статус должен совпадать");
+        assertEquals(task.getDuration(), deleted.getDuration(), "Длительность должна совпадать");
+        assertEquals(task.getStartTime(), deleted.getStartTime(), "Время начала должно совпадать");
+        assertThrows(NotFoundException.class, () -> reloaded.getTaskByID(task.getId()),
+                "getTaskByID() должен бросать NotFoundException для удалённой задачи");
         assertTrue(reloaded.getTasks().isEmpty(), "Список задач должен быть пуст после удаления единственной задачи");
     }
 

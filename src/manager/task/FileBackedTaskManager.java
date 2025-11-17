@@ -15,8 +15,8 @@ import java.util.List;
 import java.util.stream.Stream;
 
 public class FileBackedTaskManager extends InMemoryTaskManager {
-    private final File file;
     private static final String DEFAULT_FILE_PATH = "./data/manager.csv";
+    private final File file;
 
     public FileBackedTaskManager() {
         this.file = new File(DEFAULT_FILE_PATH);
@@ -26,6 +26,58 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
     public FileBackedTaskManager(File file) {
         this.file = file;
         initFile();
+    }
+
+    public static FileBackedTaskManager loadFromFile(String filePath) throws ManagerSaveException {
+        File file = new File(filePath);
+        try {
+            String content = Files.readString(Paths.get(file.getAbsolutePath()), StandardCharsets.UTF_8);
+
+            if (content.trim().isEmpty()) {
+                throw new ManagerSaveException("Файл пуст");
+            }
+
+            String[] lines = content.split("\n");
+            if (lines.length <= 1) {
+                throw new ManagerSaveException("Файл не содержит данных (только заголовок)");
+            }
+
+            FileBackedTaskManager manager = new FileBackedTaskManager(file);
+
+            List<Epic> epicsToAdd = new ArrayList<>();
+            List<Subtask> subtasksToAdd = new ArrayList<>();
+            List<Task> tasksToAdd = new ArrayList<>();
+
+            for (int i = 1; i < lines.length; i++) {
+                String line = lines[i].trim();
+                if (line.isEmpty()) continue;
+
+                try {
+                    Task task = CsvTaskUtils.taskFromString(line);
+                    if (task instanceof Subtask) {
+                        subtasksToAdd.add((Subtask) task);
+                    } else if (task instanceof Epic) {
+                        epicsToAdd.add((Epic) task);
+                    } else {
+                        tasksToAdd.add(task);
+                    }
+                } catch (IllegalArgumentException e) {
+                    throw new ManagerSaveException(
+                            "Ошибка парсинга строки '" + line + "': " + e.getMessage(),
+                            e
+                    );
+                }
+            }
+
+            epicsToAdd.forEach(manager::addEpic);
+            subtasksToAdd.forEach(manager::addSubTask);
+            tasksToAdd.forEach(manager::addTask);
+
+            return manager;
+
+        } catch (IOException e) {
+            throw new ManagerSaveException("Ошибка при загрузке из файла: " + e.getMessage(), e);
+        }
     }
 
     private void initFile() {
@@ -148,58 +200,6 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
             );
         } catch (IOException e) {
             throw new ManagerSaveException("Ошибка при сохранении в файл: " + e.getMessage(), e);
-        }
-    }
-
-    public static FileBackedTaskManager loadFromFile(String filePath) throws ManagerSaveException {
-        File file = new File(filePath);
-        try {
-            String content = Files.readString(Paths.get(file.getAbsolutePath()), StandardCharsets.UTF_8);
-
-            if (content.trim().isEmpty()) {
-                throw new ManagerSaveException("Файл пуст");
-            }
-
-            String[] lines = content.split("\n");
-            if (lines.length <= 1) {
-                throw new ManagerSaveException("Файл не содержит данных (только заголовок)");
-            }
-
-            FileBackedTaskManager manager = new FileBackedTaskManager(file);
-
-            List<Epic> epicsToAdd = new ArrayList<>();
-            List<Subtask> subtasksToAdd = new ArrayList<>();
-            List<Task> tasksToAdd = new ArrayList<>();
-
-            for (int i = 1; i < lines.length; i++) {
-                String line = lines[i].trim();
-                if (line.isEmpty()) continue;
-
-                try {
-                    Task task = CsvTaskUtils.taskFromString(line);
-                    if (task instanceof Subtask) {
-                        subtasksToAdd.add((Subtask) task);
-                    } else if (task instanceof Epic) {
-                        epicsToAdd.add((Epic) task);
-                    } else {
-                        tasksToAdd.add(task);
-                    }
-                } catch (IllegalArgumentException e) {
-                    throw new ManagerSaveException(
-                            "Ошибка парсинга строки '" + line + "': " + e.getMessage(),
-                            e
-                    );
-                }
-            }
-
-            epicsToAdd.forEach(manager::addEpic);
-            subtasksToAdd.forEach(manager::addSubTask);
-            tasksToAdd.forEach(manager::addTask);
-
-            return manager;
-
-        } catch (IOException e) {
-            throw new ManagerSaveException("Ошибка при загрузке из файла: " + e.getMessage(), e);
         }
     }
 }

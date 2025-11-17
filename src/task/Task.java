@@ -6,16 +6,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 
 public class Task {
-    private String name;
-    private String description;
-    private int id;
-    private Status status;
-    private Duration duration;
-    private LocalDateTime startTime;
-
-    protected static final DateTimeFormatter DATE_FORMATTER =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
     public static final Comparator<Task> START_TIME_COMPARATOR = (t1, t2) -> {
         if (t1.getStartTime() == null) return 1;
         if (t2.getStartTime() == null) return -1;
@@ -25,6 +15,14 @@ public class Task {
 
         return Integer.compare(t1.getId(), t2.getId());
     };
+    protected static final DateTimeFormatter DATE_FORMATTER =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private String name;
+    private String description;
+    private int id;
+    private Status status;
+    private Duration duration;
+    private LocalDateTime startTime;
 
     protected Task() {
     }
@@ -58,48 +56,28 @@ public class Task {
         return name;
     }
 
+    public void setName(String name) {
+        this.name = name;
+    }
+
     public int getId() {
         return id;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public Duration getDuration() {
-        return duration;
-    }
-
-    public Status getStatus() {
-        return status;
-    }
-
-    public LocalDateTime getStartTime() {
-        return startTime;
-    }
-
-    public LocalDateTime getEndTime() {
-        if (startTime == null) {
-            return null;
-        }
-        return startTime.plus(duration);
-    }
-
-    public TaskType getTaskType() {
-        if (this instanceof Epic) return TaskType.EPIC;
-        if (this instanceof Subtask) return TaskType.SUBTASK;
-        return TaskType.TASK;
-    }
-
-    public void setEndTime(LocalDateTime endTime) {
     }
 
     public void setId(int id) {
         this.id = id;
     }
 
-    public void setStatus(Status status) {
-        this.status = status;
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public Duration getDuration() {
+        return duration;
     }
 
     public void setDuration(Duration duration) {
@@ -109,8 +87,36 @@ public class Task {
         this.duration = duration;
     }
 
+    public Status getStatus() {
+        return status;
+    }
+
+    public void setStatus(Status status) {
+        this.status = status;
+    }
+
+    public LocalDateTime getStartTime() {
+        return startTime;
+    }
+
     public void setStartTime(LocalDateTime startTime) {
         this.startTime = startTime;
+    }
+
+    public LocalDateTime getEndTime() {
+        if (startTime == null) {
+            return null;
+        }
+        return startTime.plus(duration);
+    }
+
+    public void setEndTime(LocalDateTime endTime) {
+    }
+
+    public TaskType getTaskType() {
+        if (this instanceof Epic) return TaskType.EPIC;
+        if (this instanceof Subtask) return TaskType.SUBTASK;
+        return TaskType.TASK;
     }
 
     @Override

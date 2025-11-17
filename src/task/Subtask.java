@@ -8,10 +8,8 @@ public class Subtask extends Task {
 
     public Subtask(int id, String name, String description, Status status,
                    Duration duration, LocalDateTime startTime, int epicId) {
-        super(id, name, description, status);
+        super(id, name, description, status, duration, startTime);  // ← Все поля передаются в родительский конструктор
         this.epicId = epicId;
-        setDuration(duration);
-        setStartTime(startTime);
     }
 
     public int getEpicId() {

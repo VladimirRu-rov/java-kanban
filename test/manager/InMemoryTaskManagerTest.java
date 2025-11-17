@@ -1,9 +1,13 @@
 package manager;
 
+import exceptions.NotFoundException;
 import manager.task.InMemoryTaskManager;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import task.*;
+import task.Epic;
+import task.Status;
+import task.Subtask;
+import task.Task;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -43,7 +47,11 @@ public class InMemoryTaskManagerTest extends TaskManagerTest<InMemoryTaskManager
 
     @Test
     public void testGetTaskByID_Nonexistent() {
-        Assertions.assertNull(taskManager.getTaskByID(999), "Не существующая задача должна возвращать null");
+        assertThrows(
+                NotFoundException.class,
+                () -> taskManager.getTaskByID(999),
+                "Ожидалось исключение NotFoundException для несуществующего ID"
+        );
     }
 
     @Test

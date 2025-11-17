@@ -88,11 +88,19 @@ public class HistoryManagerTest {
         historyManager.add(task1);
         historyManager.add(task2);
         historyManager.add(task3);
-        historyManager.remove(task2.getId());
-        List<Task> history = historyManager.getHistory();
 
-        assertEquals(2, history.size(), "Размер истории должен быть равен двум элементам");
-        assertSame(task1, history.get(0), "Первый элемент должен остаться прежним");
-        assertSame(task3, history.get(1), "Последний элемент должен остаться прежним");
+        List<Task> initialHistory = historyManager.getHistory();
+        assertEquals(3, initialHistory.size(), "Изначально в истории должно быть 3 задачи");
+        assertSame(task3, initialHistory.get(0), "Первый элемент должен быть task3 (последняя добавленная)");
+        assertSame(task2, initialHistory.get(1), "Второй элемент должен быть task2");
+        assertSame(task1, initialHistory.get(2), "Третий элемент должен быть task1");
+
+        historyManager.remove(task2.getId());
+
+        List<Task> history = historyManager.getHistory();
+        assertEquals(2, history.size(), "После удаления должно остаться 2 задачи");
+
+        assertSame(task3, history.get(0), "Первый элемент должен быть task3");
+        assertSame(task1, history.get(1), "Второй элемент должен быть task1 (task2 удалён)");
     }
 }
